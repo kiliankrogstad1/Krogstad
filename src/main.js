@@ -1,7 +1,7 @@
 /* ================= Krogstad PWA – Hauptteil =================
    Daten kommen verschlüsselt (data.enc.json). Entschlüsselt wird nur im Speicher, mit Kilians Passwort.
    Schlüssel-Aufbau: Passwort → PBKDF2 → AES-Key → entschlüsselt privaten RSA-Schlüssel → entschlüsselt Daten-Key → Daten. */
-const APPV = "1.0";
+const APPV = "1.1";
 const $ = id => document.getElementById(id);
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const ub64 = u => { let s = ""; const a = new Uint8Array(u); for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode.apply(null, a.subarray(i, i + 8192)); return btoa(s) };
@@ -113,12 +113,12 @@ function start(D) {
   setInterval(() => { uhr() }, 30000); uhr();
 }
 function uhr() { const n = new Date(); $("clock").textContent = hm(n); $("dtxt").textContent = pad(n.getDate()) + ". " + MON[n.getMonth()].slice(0, 3) + " " + n.getFullYear() }
-const VIEWS = ["heute", "woche", "todos", "ziele", "mails", "youtube", "finanzen", "alfred"];
+const VIEWS = ["core", "heute", "woche", "todos", "ziele", "mails", "youtube", "finanzen", "alfred"];
 function route() {
-  let v = (location.hash || "#heute").slice(1); if (!VIEWS.includes(v)) v = "heute";
+  let v = (location.hash || "#core").slice(1); if (!VIEWS.includes(v)) v = "core"; CUR = v;
   document.querySelectorAll(".view").forEach(x => x.hidden = x.dataset.view !== v);
   document.querySelectorAll("#nav a").forEach(a => a.setAttribute("aria-current", a.getAttribute("href") === "#" + v ? "page" : "false"));
-  ({ heute: rHeute, woche: rWoche, todos: rTodos, ziele: rZiele, mails: rMails, youtube: rYT, finanzen: rFin, alfred: rAlfred })[v]();
+  ({ core: () => CORE.show(), heute: rHeute, woche: rWoche, todos: rTodos, ziele: rZiele, mails: rMails, youtube: rYT, finanzen: rFin, alfred: rAlfred })[v]();
   window.scrollTo(0, 0);
 }
 function tlItem(x, now, heute) {
