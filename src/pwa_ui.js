@@ -1,4 +1,4 @@
-const APP_VER="3.1";
+const APP_VER="3.2";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -54,3 +54,12 @@ KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("v
   const z=el("div","zoomview");const x=el("button","zx","✕");x.type="button";x.setAttribute("aria-label","Schliessen");const k=document.getElementById("briefKind");
   z.append(x,el("div","zt","// Alfred · "+(k?k.textContent:"Briefing")),el("div","zb",b.textContent));document.body.appendChild(z);document.body.style.overflow="hidden";
   x.onclick=()=>{z.remove();document.body.style.overflow=""}})})();
+
+/* Alfred-Chat: grosses Auge und Vorschläge, solange noch kaum geredet wurde */
+(function(){const jv=document.getElementById("jv"),log=document.getElementById("jvLog"),f=document.getElementById("jvForm"),inp=document.getElementById("jvIn");if(!jv||!log||!f)return;
+  const hero=el("div","jvhero");const e=el("canvas","eye");e.dataset.size="96";hero.append(e,el("small",null,"Alfred hört zu"));
+  const chips=el("div","jvchips");["Was steht heute an?","Was ist diese Woche los?","Trag mir einen Termin ein","Was ist noch offen?","Musik leiser"].forEach(q=>{const b=el("button",null,q);b.type="button";
+    b.onclick=()=>{if(/Termin ein$/.test(q)){inp.value="Trag mir ";inp.focus();return}inp.value=q;f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))};chips.appendChild(b)});
+  log.after(hero);hero.after(chips);
+  const upd=()=>{const n=log.querySelectorAll(".msg.me").length;hero.style.display=n?"none":"";chips.style.display=n>1?"none":""};upd();new MutationObserver(upd).observe(log,{childList:true});
+  inp.addEventListener("focus",()=>setTimeout(()=>{log.scrollTop=log.scrollHeight},300))})();

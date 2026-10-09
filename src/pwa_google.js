@@ -38,7 +38,7 @@ const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.ap
   async function refresh(force){if(!ok()||loading)return;loading=true;status("Google · lädt …");
     try{S.mcp=shim;S.events=await events();S.calLoaded=true;S.calError=null;S.mails=null;await loadMails(true);
       try{S.cmails=(await threads("(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) -in:sent -from:me is:unread newer_than:30d",15)).threads.map(t=>{const m=t.messages[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl,count:t.messageCount}})}catch(e){}
-      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){status(e.code==="needs_reauth"?null:"Google: "+String(e.message||e).slice(0,80))}finally{loading=false}}
+      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){const m=String(e.message||e);status(e.code==="needs_reauth"?null:/has not been used|is disabled|accessNotConfigured/i.test(m)?(/gmail/i.test(m)?"Gmail-API":"Kalender-API")+" in Google Cloud noch nicht aktiviert":"Google: "+m.slice(0,60))}finally{loading=false}}
   /* Anzeige oben: live oder verbinden */
   function status(msg){const st=document.getElementById("stand");if(!st)return;st.textContent="";
     const base=el("span",null,"Daten "+standTxt().replace("Stand ",""));st.appendChild(base);

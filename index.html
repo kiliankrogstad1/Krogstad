@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Krogstad</title><meta name="theme-color" content="#02070b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><link rel="preconnect" href="https://fonts.googleapis.com">
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content"><title>Krogstad</title><meta name="theme-color" content="#02070b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
@@ -350,8 +350,9 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .nexus canvas{touch-action:pan-y!important}
 /* Alfred-Chat und Briefing auf dem Handy gross */
 @media (max-width:820px){
- .jv{inset:0!important;width:auto!important;max-height:none!important;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
- .jv .log{flex:1;max-height:none!important}.jv .msg{font-size:16px;line-height:1.5}
+ .jv{inset:0!important;height:100dvh;width:auto!important;max-height:none!important;display:flex!important;flex-direction:column;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
+ .jv .log{flex:1 1 auto;min-height:0;max-height:none!important;overflow-y:auto}
+ .jv[hidden]{display:none!important}.jv .msg{font-size:16px;line-height:1.5}
 }
 @keyframes jvin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .zoomview{position:fixed;inset:0;z-index:65;background:var(--bg,#02070b);overflow-y:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 30px;animation:jvin .25s ease}
@@ -359,6 +360,8 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .zoomview .zt{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:8px 0 14px}
 .zoomview .zb{font-size:19px;line-height:1.6;white-space:pre-wrap;clear:both}
 #brief{cursor:zoom-in}
+.jvchips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.jvchips button{font:inherit;font-size:13px;color:var(--cyan);background:rgba(46,230,245,.06);border:1px solid var(--line-hi);border-radius:999px;padding:8px 12px;cursor:pointer}
+.jvhero{display:flex;flex-direction:column;align-items:center;gap:10px;margin:auto 0 8px;opacity:.9}.jvhero small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 </style></head><body>
 <div class="splash" id="splash" aria-hidden="true">
   <div class="sp-eye"><canvas class="eye" data-size="132"></canvas><i class="lid top"></i><i class="lid bot"></i></div>
@@ -1261,7 +1264,7 @@ const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.ap
   async function refresh(force){if(!ok()||loading)return;loading=true;status("Google · lädt …");
     try{S.mcp=shim;S.events=await events();S.calLoaded=true;S.calError=null;S.mails=null;await loadMails(true);
       try{S.cmails=(await threads("(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) -in:sent -from:me is:unread newer_than:30d",15)).threads.map(t=>{const m=t.messages[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl,count:t.messageCount}})}catch(e){}
-      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){status(e.code==="needs_reauth"?null:"Google: "+String(e.message||e).slice(0,80))}finally{loading=false}}
+      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){const m=String(e.message||e);status(e.code==="needs_reauth"?null:/has not been used|is disabled|accessNotConfigured/i.test(m)?(/gmail/i.test(m)?"Gmail-API":"Kalender-API")+" in Google Cloud noch nicht aktiviert":"Google: "+m.slice(0,60))}finally{loading=false}}
   /* Anzeige oben: live oder verbinden */
   function status(msg){const st=document.getElementById("stand");if(!st)return;st.textContent="";
     const base=el("span",null,"Daten "+standTxt().replace("Stand ",""));st.appendChild(base);
@@ -1345,7 +1348,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="3.1";
+const APP_VER="3.2";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -1401,6 +1404,15 @@ KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("v
   const z=el("div","zoomview");const x=el("button","zx","✕");x.type="button";x.setAttribute("aria-label","Schliessen");const k=document.getElementById("briefKind");
   z.append(x,el("div","zt","// Alfred · "+(k?k.textContent:"Briefing")),el("div","zb",b.textContent));document.body.appendChild(z);document.body.style.overflow="hidden";
   x.onclick=()=>{z.remove();document.body.style.overflow=""}})})();
+
+/* Alfred-Chat: grosses Auge und Vorschläge, solange noch kaum geredet wurde */
+(function(){const jv=document.getElementById("jv"),log=document.getElementById("jvLog"),f=document.getElementById("jvForm"),inp=document.getElementById("jvIn");if(!jv||!log||!f)return;
+  const hero=el("div","jvhero");const e=el("canvas","eye");e.dataset.size="96";hero.append(e,el("small",null,"Alfred hört zu"));
+  const chips=el("div","jvchips");["Was steht heute an?","Was ist diese Woche los?","Trag mir einen Termin ein","Was ist noch offen?","Musik leiser"].forEach(q=>{const b=el("button",null,q);b.type="button";
+    b.onclick=()=>{if(/Termin ein$/.test(q)){inp.value="Trag mir ";inp.focus();return}inp.value=q;f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))};chips.appendChild(b)});
+  log.after(hero);hero.after(chips);
+  const upd=()=>{const n=log.querySelectorAll(".msg.me").length;hero.style.display=n?"none":"";chips.style.display=n>1?"none":""};upd();new MutationObserver(upd).observe(log,{childList:true});
+  inp.addEventListener("focus",()=>setTimeout(()=>{log.scrollTop=log.scrollHeight},300))})();
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>

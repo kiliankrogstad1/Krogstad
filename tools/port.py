@@ -161,8 +161,9 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .nexus canvas{touch-action:pan-y!important}
 /* Alfred-Chat und Briefing auf dem Handy gross */
 @media (max-width:820px){
- .jv{inset:0!important;width:auto!important;max-height:none!important;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
- .jv .log{flex:1;max-height:none!important}.jv .msg{font-size:16px;line-height:1.5}
+ .jv{inset:0!important;height:100dvh;width:auto!important;max-height:none!important;display:flex!important;flex-direction:column;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
+ .jv .log{flex:1 1 auto;min-height:0;max-height:none!important;overflow-y:auto}
+ .jv[hidden]{display:none!important}.jv .msg{font-size:16px;line-height:1.5}
 }
 @keyframes jvin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .zoomview{position:fixed;inset:0;z-index:65;background:var(--bg,#02070b);overflow-y:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 30px;animation:jvin .25s ease}
@@ -170,9 +171,11 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .zoomview .zt{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:8px 0 14px}
 .zoomview .zb{font-size:19px;line-height:1.6;white-space:pre-wrap;clear:both}
 #brief{cursor:zoom-in}
+.jvchips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.jvchips button{font:inherit;font-size:13px;color:var(--cyan);background:rgba(46,230,245,.06);border:1px solid var(--line-hi);border-radius:999px;padding:8px 12px;cursor:pointer}
+.jvhero{display:flex;flex-direction:column;align-items:center;gap:10px;margin:auto 0 8px;opacity:.9}.jvhero small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]
-head = ('<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">'
+head = ('<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">'
         '<title>Krogstad</title><meta name="theme-color" content="#02070b"><link rel="manifest" href="manifest.webmanifest">'
         '<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">' + fonts)
 html = head + style + extra + "</head><body>\n" + body + "<script>" + js + "</script></body></html>"
