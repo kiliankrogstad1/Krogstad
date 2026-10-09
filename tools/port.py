@@ -37,7 +37,8 @@ body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wir
            'Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.')
 body = rep(body, '<p class="note">Routine aus deiner Wochenvorlage', '<p class="note">App · Daten verschlüsselt, Abgleich 3× täglich · Routine aus deiner Wochenvorlage')
 body = (R / "src" / "pwa_ui.html").read_text(encoding="utf-8") + body
-body = rep(body, '<form id="jvForm">', '<div class="act" id="jvKey" hidden></div><form id="jvForm">')
+body = rep(body, '<form id="jvForm">', '<div class="act" id="jvKey" hidden></div><form id="jvForm" autocomplete="off">')
+body = re.sub(r'<input id="jvIn"[^>]*>', '<textarea id="jvIn" rows="1" autocomplete="off" autocorrect="on" spellcheck="true" enterkeyhint="send" placeholder="Frage an Alfred …" aria-label="Frage an Alfred"></textarea>', body)
 
 # ---------- Script ----------
 shim = (R / "src" / "pwa_shim.js").read_text(encoding="utf-8")
@@ -63,6 +64,12 @@ js += """
 /* Mails auf Android direkt in der Gmail-App öffnen */
 function gmailHref(m){const isAndroid=/Android/i.test(navigator.userAgent);const web="https://mail.google.com/mail/u/0/#inbox/"+(m.tid||"");
   return isAndroid?"intent://mail.google.com/mail/u/0/#Intent;scheme=https;package=com.google.android.gm;S.browser_fallback_url="+encodeURIComponent(web)+";end":(m.url||web)}
+"""
+js += """
+/* Enter sendet, Shift+Enter = neue Zeile; Feld wächst mit */
+(function(){const t=document.getElementById("jvIn"),f=document.getElementById("jvForm");if(!t||t.tagName!=="TEXTAREA")return;
+  t.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))}});
+  t.addEventListener("input",()=>{t.style.height="auto";t.style.height=Math.min(120,t.scrollHeight)+"px"})})();
 """
 js += "\n" + (R / "src" / "pwa_google.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
@@ -170,8 +177,8 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .zoomview .zx{position:sticky;top:0;float:right;width:42px;height:42px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(2,7,11,.9);color:var(--cyan);font-size:20px;cursor:pointer}
 .zoomview .zt{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:8px 0 14px}
 .zoomview .zb{font-size:19px;line-height:1.6;white-space:pre-wrap;clear:both}
-#brief{cursor:zoom-in}
 .jvchips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.jvchips button{font:inherit;font-size:13px;color:var(--cyan);background:rgba(46,230,245,.06);border:1px solid var(--line-hi);border-radius:999px;padding:8px 12px;cursor:pointer}
+.jv.typing .jvhero{display:none!important}.jv #jvIn{flex:1;min-width:0;resize:none;font:inherit;font-size:16px;line-height:1.35;background:var(--bg);color:var(--fg);border:1px solid var(--line-hi);border-radius:6px;padding:10px 12px;max-height:120px}
 .jvhero{display:flex;flex-direction:column;align-items:center;gap:10px;margin:auto 0 8px;opacity:.9}.jvhero small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]

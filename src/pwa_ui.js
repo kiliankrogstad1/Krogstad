@@ -1,4 +1,4 @@
-const APP_VER="3.2";
+const APP_VER="3.3";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -49,11 +49,7 @@ addEventListener("pointerdown",()=>KFS.go(),{once:true,capture:true});
   const W=["So","Mo","Di","Mi","Do","Fr","Sa"];const tick=()=>{const n=new Date();mc.textContent="";mc.append(el("small",null,W[n.getDay()]+" "+String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."),el("b",null,String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")))};tick();setInterval(tick,15000)})();
 KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("volSec"));
 
-/* Briefing antippen → gross lesen, ✕ → zurück */
-(function(){const b=document.getElementById("brief");if(!b)return;b.title="Antippen zum Vergrössern";b.addEventListener("click",()=>{if(document.querySelector(".zoomview"))return;
-  const z=el("div","zoomview");const x=el("button","zx","✕");x.type="button";x.setAttribute("aria-label","Schliessen");const k=document.getElementById("briefKind");
-  z.append(x,el("div","zt","// Alfred · "+(k?k.textContent:"Briefing")),el("div","zb",b.textContent));document.body.appendChild(z);document.body.style.overflow="hidden";
-  x.onclick=()=>{z.remove();document.body.style.overflow=""}})})();
+
 
 /* Alfred-Chat: grosses Auge und Vorschläge, solange noch kaum geredet wurde */
 (function(){const jv=document.getElementById("jv"),log=document.getElementById("jvLog"),f=document.getElementById("jvForm"),inp=document.getElementById("jvIn");if(!jv||!log||!f)return;
@@ -62,4 +58,6 @@ KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("v
     b.onclick=()=>{if(/Termin ein$/.test(q)){inp.value="Trag mir ";inp.focus();return}inp.value=q;f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))};chips.appendChild(b)});
   log.after(hero);hero.after(chips);
   const upd=()=>{const n=log.querySelectorAll(".msg.me").length;hero.style.display=n?"none":"";chips.style.display=n>1?"none":""};upd();new MutationObserver(upd).observe(log,{childList:true});
-  inp.addEventListener("focus",()=>setTimeout(()=>{log.scrollTop=log.scrollHeight},300))})();
+  inp.addEventListener("focus",()=>{jv.classList.add("typing");setTimeout(()=>{log.scrollTop=log.scrollHeight},300)});inp.addEventListener("blur",()=>setTimeout(()=>jv.classList.remove("typing"),150));
+  /* Höhe an den sichtbaren Bereich über der Tastatur anpassen */
+  const vv=window.visualViewport;if(vv){const fit=()=>{if(matchMedia("(max-width:820px)").matches&&!jv.hidden){jv.style.height=vv.height+"px";jv.style.top=vv.offsetTop+"px"}else{jv.style.height="";jv.style.top=""}};vv.addEventListener("resize",fit);vv.addEventListener("scroll",fit);new MutationObserver(fit).observe(jv,{attributes:true,attributeFilter:["hidden"]})}})();

@@ -359,8 +359,8 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 .zoomview .zx{position:sticky;top:0;float:right;width:42px;height:42px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(2,7,11,.9);color:var(--cyan);font-size:20px;cursor:pointer}
 .zoomview .zt{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:8px 0 14px}
 .zoomview .zb{font-size:19px;line-height:1.6;white-space:pre-wrap;clear:both}
-#brief{cursor:zoom-in}
 .jvchips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.jvchips button{font:inherit;font-size:13px;color:var(--cyan);background:rgba(46,230,245,.06);border:1px solid var(--line-hi);border-radius:999px;padding:8px 12px;cursor:pointer}
+.jv.typing .jvhero{display:none!important}.jv #jvIn{flex:1;min-width:0;resize:none;font:inherit;font-size:16px;line-height:1.35;background:var(--bg);color:var(--fg);border:1px solid var(--line-hi);border-radius:6px;padding:10px 12px;max-height:120px}
 .jvhero{display:flex;flex-direction:column;align-items:center;gap:10px;margin:auto 0 8px;opacity:.9}.jvhero small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 </style></head><body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -494,7 +494,7 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
 <section class="panel jv" id="jv" hidden aria-labelledby="jvh">
   <div class="ph"><div class="jvhead"><canvas class="eye" id="eyeChat" data-size="38" aria-hidden="true"></canvas><h2 id="jvh">// Alfred</h2></div><button class="btn" type="button" id="jvClose">Schliessen</button></div>
   <div class="log" id="jvLog"><div class="msg ai">Zu Diensten, Sir. Fragen Sie mich zu Ihrem Tag, Ihren To-dos oder Ihrem Kanal.</div></div>
-  <div class="act" id="jvKey" hidden></div><form id="jvForm"><input id="jvIn" autocomplete="off" placeholder="z. B. Wann gehe ich diese Woche ins Gym?" aria-label="Frage an Alfred"><button class="jarvis-btn" type="submit">Senden</button></form>
+  <div class="act" id="jvKey" hidden></div><form id="jvForm" autocomplete="off"><textarea id="jvIn" rows="1" autocomplete="off" autocorrect="on" spellcheck="true" enterkeyhint="send" placeholder="Frage an Alfred …" aria-label="Frage an Alfred"></textarea><button class="jarvis-btn" type="submit">Senden</button></form>
 </section>
 
 <script>
@@ -978,7 +978,7 @@ function neigh(n){const s=new Set([n.id]);for(const l of G.links){if(l.a===n.id)
 let loopOn=false;function startLoop(){if(reduce){settle();return}if(loopOn)return;loopOn=true;requestAnimationFrame(frame)}
 /* 3D: Der Graph dreht sich langsam um Alfred; ziehen dreht, Rad/zwei Finger zoomen, antippen öffnet */
 function frame(ts){if(S.view!=="home"){loopOn=false;return}const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w){loopOn=false;return}
-  if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}if(!reduce)step();
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}if(!reduce)step();
   {const e=reduce?1:.16;G.cam.x+=(G.tgt.x-G.cam.x)*e;G.cam.y+=(G.tgt.y-G.cam.y)*e;G.cam.k+=(G.tgt.k-G.cam.k)*e}
   if(!G.rotDrag&&!reduce){G.rot+=.0016+G.spinV;G.spinV*=.95}G.tilt+=(G.tiltT-G.tilt)*.12;
   const t=reduce?0:ts/1000,k=G.cam.k*Math.max(.62,Math.min(1.45,Math.min(w,h*1.35)/600)),ox=w/2+G.cam.x,oy=h/2+G.cam.y;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
@@ -1224,6 +1224,11 @@ addEventListener("resize",()=>{if(reduce)frame(0)});
 function gmailHref(m){const isAndroid=/Android/i.test(navigator.userAgent);const web="https://mail.google.com/mail/u/0/#inbox/"+(m.tid||"");
   return isAndroid?"intent://mail.google.com/mail/u/0/#Intent;scheme=https;package=com.google.android.gm;S.browser_fallback_url="+encodeURIComponent(web)+";end":(m.url||web)}
 
+/* Enter sendet, Shift+Enter = neue Zeile; Feld wächst mit */
+(function(){const t=document.getElementById("jvIn"),f=document.getElementById("jvForm");if(!t||t.tagName!=="TEXTAREA")return;
+  t.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))}});
+  t.addEventListener("input",()=>{t.style.height="auto";t.style.height=Math.min(120,t.scrollHeight)+"px"})})();
+
 /* ---------- Google direkt: Kalender + Gmail live in der App ----------
    Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
    Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
@@ -1348,7 +1353,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="3.2";
+const APP_VER="3.3";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -1399,11 +1404,7 @@ addEventListener("pointerdown",()=>KFS.go(),{once:true,capture:true});
   const W=["So","Mo","Di","Mi","Do","Fr","Sa"];const tick=()=>{const n=new Date();mc.textContent="";mc.append(el("small",null,W[n.getDay()]+" "+String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."),el("b",null,String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")))};tick();setInterval(tick,15000)})();
 KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("volSec"));
 
-/* Briefing antippen → gross lesen, ✕ → zurück */
-(function(){const b=document.getElementById("brief");if(!b)return;b.title="Antippen zum Vergrössern";b.addEventListener("click",()=>{if(document.querySelector(".zoomview"))return;
-  const z=el("div","zoomview");const x=el("button","zx","✕");x.type="button";x.setAttribute("aria-label","Schliessen");const k=document.getElementById("briefKind");
-  z.append(x,el("div","zt","// Alfred · "+(k?k.textContent:"Briefing")),el("div","zb",b.textContent));document.body.appendChild(z);document.body.style.overflow="hidden";
-  x.onclick=()=>{z.remove();document.body.style.overflow=""}})})();
+
 
 /* Alfred-Chat: grosses Auge und Vorschläge, solange noch kaum geredet wurde */
 (function(){const jv=document.getElementById("jv"),log=document.getElementById("jvLog"),f=document.getElementById("jvForm"),inp=document.getElementById("jvIn");if(!jv||!log||!f)return;
@@ -1412,7 +1413,9 @@ KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("v
     b.onclick=()=>{if(/Termin ein$/.test(q)){inp.value="Trag mir ";inp.focus();return}inp.value=q;f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))};chips.appendChild(b)});
   log.after(hero);hero.after(chips);
   const upd=()=>{const n=log.querySelectorAll(".msg.me").length;hero.style.display=n?"none":"";chips.style.display=n>1?"none":""};upd();new MutationObserver(upd).observe(log,{childList:true});
-  inp.addEventListener("focus",()=>setTimeout(()=>{log.scrollTop=log.scrollHeight},300))})();
+  inp.addEventListener("focus",()=>{jv.classList.add("typing");setTimeout(()=>{log.scrollTop=log.scrollHeight},300)});inp.addEventListener("blur",()=>setTimeout(()=>jv.classList.remove("typing"),150));
+  /* Höhe an den sichtbaren Bereich über der Tastatur anpassen */
+  const vv=window.visualViewport;if(vv){const fit=()=>{if(matchMedia("(max-width:820px)").matches&&!jv.hidden){jv.style.height=vv.height+"px";jv.style.top=vv.offsetTop+"px"}else{jv.style.height="";jv.style.top=""}};vv.addEventListener("resize",fit);vv.addEventListener("scroll",fit);new MutationObserver(fit).observe(jv,{attributes:true,attributeFilter:["hidden"]})}})();
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
