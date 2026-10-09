@@ -30,7 +30,7 @@ body = cut(body, '<div class="lock"', '<div class="wrap"',
 body = rep(body, '  </div>\n\n  <!-- HOME -->', '  </div>\n  <p class="note" id="stand" style="margin:0 0 8px">–</p>\n\n  <!-- HOME -->')
 i = body.index('<section class="panel" aria-labelledby="h13">'); j = body.index("</section>", i) + 10
 body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit, Klang & Alfred</h2><div class="meta">dieses Gerät</div></div>\n'
-                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n'
+                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>\n'
                    '      <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>\n'
                    '      <div class="volbox" id="volSec"></div>\n      <p class="note" id="pendBox"></p>\n    </section>') + body[j:]
 body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wird nie automatisch, nur gespeichert als Entwurf in Gmail.',
@@ -58,12 +58,16 @@ js = rep(js, ':"Verzeihung, Sir, das hat nicht geklappt."}', ':err&&err.code==="
 for bad in ("claude.use(\"mcp\")", "MYMAIL", "OFF_TPL", "krogChangePw"):
     assert bad not in js or bad == 'claude.use("mcp")', bad
 js = rep(js, '["finanzen","Finanzen","offen","--violet"]', '["finanzen","Finanzen",S.bitpanda?Math.round(S.bitpanda.total_chf)+" CHF":"–","--violet"]')
+js += "\n" + (R / "src" / "pwa_google.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
 js += '\nif("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});\n'
 
 extra = """<style>
-html,body{overscroll-behavior-y:none}
+html,body{overscroll-behavior-y:none;overflow-x:hidden}
+@media (max-width:820px){.bar::before,.bar::after{left:0!important;right:0!important}}
+#stand .gbtn{margin-left:8px;padding:3px 10px;font-size:10.5px}#stand .gl{color:var(--green)}
+#gBox input{background:transparent;border:1px solid var(--line-hi);color:inherit;padding:9px 10px;font-size:14px}
 [hidden]{display:none!important}
 .pwmask{-webkit-text-security:disc;text-security:disc}
 .lock input{background:transparent;border:1px solid var(--line-hi);color:inherit;padding:10px 12px;font:inherit;font-size:16px}

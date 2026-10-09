@@ -259,7 +259,10 @@ html{overflow-x:clip}
 .s-ask{justify-content:center;display:flex;gap:8px}
 @media (prefers-reduced-motion:reduce){.illu *,.pet,.bar::after{animation:none!important}}
 </style><style>
-html,body{overscroll-behavior-y:none}
+html,body{overscroll-behavior-y:none;overflow-x:hidden}
+@media (max-width:820px){.bar::before,.bar::after{left:0!important;right:0!important}}
+#stand .gbtn{margin-left:8px;padding:3px 10px;font-size:10.5px}#stand .gl{color:var(--green)}
+#gBox input{background:transparent;border:1px solid var(--line-hi);color:inherit;padding:9px 10px;font-size:14px}
 [hidden]{display:none!important}
 .pwmask{-webkit-text-security:disc;text-security:disc}
 .lock input{background:transparent;border:1px solid var(--line-hi);color:inherit;padding:10px 12px;font:inherit;font-size:16px}
@@ -436,6 +439,7 @@ html,body{overscroll-behavior-y:none}
     <section class="panel" aria-labelledby="h13">
       <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit, Klang & Alfred</h2><div class="meta">dieses Gerät</div></div>
       <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>
+      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>
       <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>
       <div class="volbox" id="volSec"></div>
       <p class="note" id="pendBox"></p>
@@ -602,7 +606,7 @@ function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled")
   S.briefings=D.briefings||(D.briefing?{[D.briefing.datum+"-x"]:D.briefing.text}:{});
   applyLocal();S.db=LDB;S.dataReady=true;
   renderAll();renderVids();renderBitpanda();renderArena();renderMails();renderPending();keyBox(document.getElementById("keyBox"));
-  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false)}
+  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false);if(typeof GG!=="undefined"){GG.status();GG.box(document.getElementById("gBox"));if(GG.ok())GG.refresh(true)}}
 
 /* ---------- Alfred über den eigenen Anthropic-Schlüssel ---------- */
 const getSample=async()=>{const key=await openLocal("anthropic");if(!key)return null;
@@ -826,7 +830,7 @@ async function loadMails(force){if(mailsLoading||(S.mails&&!force))return;mailsL
   try{if(!S.mcp)S.mcp=await claude.use("mcp");if(!S.mcp){S.mailError="Gmail in dieser Ansicht nicht verfügbar"}else{
     const r=await S.mcp.callTool("Gmail","search_threads",{query:"in:inbox is:unread -category:promotions -category:social -category:updates -category:forums -to:contact@crogstad.com -deliveredto:contact@crogstad.com newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});
     const p=r.payload||{};const mapT=th=>(th||[]).map(t=>{const m=(t.messages||[])[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl||m.viewUrl,count:t.messageCount||1}});S.mails=mapT(p.threads);S.mailError=null;
-    try{const r2=await S.mcp.callTool("Gmail","search_threads",{query:"(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) is:unread newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});S.cmails=mapT((r2.payload||{}).threads)}catch(_){S.cmails=S.cmails||[]}}}
+    try{const r2=await S.mcp.callTool("Gmail","search_threads",{query:"(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) -in:sent -from:me is:unread newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});S.cmails=mapT((r2.payload||{}).threads)}catch(_){S.cmails=S.cmails||[]}}}
   catch(e){const c=e&&e.code;S.mailError=c==="needs_reauth"?"Gmail neu verbinden (Einstellungen → Connectors)":c==="server_not_connected"?"Gmail unter Connectors hinzufügen":["not_in_manifest","not_granted","approval_required"].includes(c)?"Gmail für diese Seite nicht erlaubt":"Gmail gerade nicht erreichbar"}
   mailsLoading=false;renderMails();drawNexusData()}
 function renderMails(){renderMailBox("mails","mailMeta",S.mails,"Nichts offen. Posteingang sauber, Sir.");renderMailBox("cmails","cmailMeta",S.cmails,"Keine ungelesenen Crogstad-Mails.")}
@@ -1200,6 +1204,60 @@ route();renderAll();startLoop();setInterval(()=>{renderAll();const si=slotInfo(n
 addEventListener("resize",()=>{if(reduce)frame(0)});
 
 
+/* ---------- Google direkt: Kalender + Gmail live in der App ----------
+   Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
+   Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
+const GG=(()=>{const CLIENT_ID="";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
+  const cid=()=>CLIENT_ID||LS.get("g_client","");let tc=null,tok=null,loading=false;
+  try{const s=JSON.parse(sessionStorage.getItem("kg_gt")||"null");if(s&&s.exp>Date.now()+6e4)tok=s}catch(e){}
+  const ok=()=>!!(tok&&tok.exp>Date.now()+3e4);
+  const api=async(url,o={})=>{if(!ok())throw{code:"needs_reauth",message:"Google neu verbinden"};const r=await fetch(url,Object.assign({},o,{headers:Object.assign({Authorization:"Bearer "+tok.t},o.body?{"Content-Type":"application/json"}:{},o.headers||{})}));
+    if(r.status===401){tok=null;sessionStorage.removeItem("kg_gt");status();throw{code:"needs_reauth",message:"Google neu verbinden"}}if(r.status===204)return{};const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:"tool_error",message:(j.error&&j.error.message)||String(r.status)};return j};
+  function loadGis(){return new Promise((res,rej)=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res();const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=()=>res();s.onerror=()=>rej(new Error("Google nicht erreichbar"));document.head.appendChild(s)})}
+  async function connect(){if(!cid()){status("Client-ID fehlt (unter Ziele → Sicherheit eintragen).");return}try{await loadGis()}catch(e){status("Google nicht erreichbar (offline?)");return}
+    if(!tc)tc=google.accounts.oauth2.initTokenClient({client_id:cid(),scope:SCOPES,prompt:"",callback:r=>{if(r&&r.access_token){tok={t:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000};try{sessionStorage.setItem("kg_gt",JSON.stringify(tok))}catch(e){}LS.set("g_ok",1);refresh(true)}else status("Anmeldung abgebrochen.")},error_callback:e=>status("Anmeldung abgebrochen.")});
+    tc.requestAccessToken({prompt:LS.get("g_ok",0)?"":"consent"})}
+  const iso=d=>d.toISOString();
+  async function events(){const s=addDays(sod(new Date()),-7),e=addDays(sod(new Date()),40);
+    const j=await api("https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin="+encodeURIComponent(iso(s))+"&timeMax="+encodeURIComponent(iso(e)));
+    return(j.items||[]).filter(x=>x.status!=="cancelled").map(x=>({id:x.id,summary:x.summary,start:x.start,end:x.end,location:x.location,description:x.description,attendees:x.attendees,status:x.status,transparency:x.transparency}))}
+  const hdr=(m,n)=>(((m.payload||{}).headers||[]).find(h=>h.name.toLowerCase()===n.toLowerCase())||{}).value||"";
+  async function threads(q,n){const j=await api("https://gmail.googleapis.com/gmail/v1/users/me/threads?maxResults="+(n||15)+"&q="+encodeURIComponent(q));
+    const out=[];for(const t of(j.threads||[]).slice(0,n||15)){try{const d=await api("https://gmail.googleapis.com/gmail/v1/users/me/threads/"+t.id+"?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Message-ID");
+      const ms=(d.messages||[]).map(m=>({id:m.id,subject:hdr(m,"Subject"),sender:hdr(m,"From"),date:hdr(m,"Date")?new Date(hdr(m,"Date")).toISOString():null,snippet:m.snippet||"",msgid:hdr(m,"Message-ID")}));
+      out.push({id:t.id,messages:ms,messageCount:ms.length,viewUrl:"https://mail.google.com/mail/u/0/#inbox/"+t.id})}catch(e){}}return{threads:out}}
+  const b64u=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  /* Dieselbe Schnittstelle wie in Krogstad-Online */
+  const shim={async callTool(server,tool,i){i=i||{};
+      if(server==="Gmail"&&tool==="search_threads")return{payload:await threads(i.query||"",i.pageSize)};
+      if(server==="Gmail"&&tool==="create_draft"){const to=(i.to||[]).join(", ");let raw="To: "+to+"\r\nSubject: =?UTF-8?B?"+btoa(unescape(encodeURIComponent(i.subject||"")))+"?=\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+        let threadId;if(i.replyToMessageId){try{const m=await api("https://gmail.googleapis.com/gmail/v1/users/me/messages/"+i.replyToMessageId+"?format=metadata&metadataHeaders=Message-ID");const mid=hdr(m,"Message-ID");threadId=m.threadId;if(mid)raw+="In-Reply-To: "+mid+"\r\nReferences: "+mid+"\r\n"}catch(e){}}
+        raw+="\r\n"+(i.body||"");const d=await api("https://gmail.googleapis.com/gmail/v1/users/me/drafts",{method:"POST",body:JSON.stringify({message:Object.assign({raw:b64u(raw)},threadId?{threadId}:{})})});return{payload:{id:d.id,viewUrl:"https://mail.google.com/mail/u/0/#drafts"}}}
+      if(server==="Google Calendar"&&tool==="list_events")return{payload:{events:await events()}};
+      if(server==="Google Calendar"&&tool==="create_event"){const t=i.allDay?{start:{date:i.startTime.slice(0,10)},end:{date:i.endTime.slice(0,10)}}:{start:{dateTime:i.startTime,timeZone:TZ},end:{dateTime:i.endTime,timeZone:TZ}};
+        const r=await api("https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=none",{method:"POST",body:JSON.stringify(Object.assign({summary:i.summary},t,i.location?{location:i.location}:{},i.description?{description:i.description}:{}))});setTimeout(()=>refresh(false),800);return{payload:{id:r.id,event:r}}}
+      if(server==="Google Calendar"&&tool==="update_event"){const b={};if(i.summary!=null)b.summary=i.summary;if(i.availability)b.transparency=i.availability==="AVAILABILITY_FREE"?"transparent":"opaque";
+        const r=await api("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+encodeURIComponent(i.eventId)+"?sendUpdates=none",{method:"PATCH",body:JSON.stringify(b)});setTimeout(()=>refresh(false),800);return{payload:r}}
+      if(server==="Google Calendar"&&tool==="delete_event"){await api("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+encodeURIComponent(i.eventId)+"?sendUpdates=none",{method:"DELETE"});setTimeout(()=>refresh(false),800);return{payload:{}}}
+      throw{code:"not_in_manifest",message:tool}},
+    async invalidate(){},watchTool(){return()=>{}}};
+  async function refresh(force){if(!ok()||loading)return;loading=true;status("Google · lädt …");
+    try{S.mcp=shim;S.events=await events();S.calLoaded=true;S.calError=null;S.mails=null;await loadMails(true);
+      try{S.cmails=(await threads("(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) -in:sent -from:me is:unread newer_than:30d",15)).threads.map(t=>{const m=t.messages[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl,count:t.messageCount}})}catch(e){}
+      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){status(e.code==="needs_reauth"?null:"Google: "+String(e.message||e).slice(0,80))}finally{loading=false}}
+  /* Anzeige oben: live oder verbinden */
+  function status(msg){const st=document.getElementById("stand");if(!st)return;st.textContent="";
+    const base=el("span",null,"Daten "+standTxt().replace("Stand ",""));st.appendChild(base);
+    if(ok()&&!msg){st.appendChild(el("span","gl"," · Google live ✓"));return}
+    if(msg){st.appendChild(el("span","gl"," · "+msg));if(/lädt/.test(msg))return}
+    if(!cid()&&!msg)return;const b=el("button","btn gbtn",LS.get("g_ok",0)?"Google aktualisieren":"Mit Google verbinden");b.type="button";b.onclick=()=>connect();st.appendChild(b)}
+  function box(bx){if(!bx)return;bx.textContent="";bx.appendChild(el("div","ast","Google direkt (Kalender + Gmail live): "+(ok()?"verbunden ✓":cid()?"bereit – oben „Mit Google verbinden“":"Client-ID fehlt")));
+    if(!CLIENT_ID){const i=el("input");i.type="text";i.placeholder="Google Client-ID (…apps.googleusercontent.com)";i.value=LS.get("g_client","");const s=el("button","btn","Client-ID speichern");s.type="button";s.onclick=()=>{LS.set("g_client",i.value.trim());tc=null;box(bx);status()};bx.append(i,s)}
+    const c=el("button","btn","Jetzt verbinden");c.type="button";c.onclick=()=>connect();bx.appendChild(c)}
+  setInterval(()=>{if(ok()&&!document.hidden)refresh(false)},10*60e3);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ok()&&Date.now()-LS.get("g_last",0)>5*60e3)refresh(false)});
+  return{connect,refresh,status,box,ok}})();
+
 /* ---------- Klang: Alfreds Geräusche + ruhige Hintergrundmusik (alles live erzeugt, keine Dateien) ---------- */
 const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{},set:Object.assign({music:.35,sfx:.6},LS.get("audio",{}))};
   const save=()=>LS.set("audio",A.set);
@@ -1268,7 +1326,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="2.6";
+const APP_VER="2.7";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}

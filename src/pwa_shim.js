@@ -75,7 +75,7 @@ function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled")
   S.briefings=D.briefings||(D.briefing?{[D.briefing.datum+"-x"]:D.briefing.text}:{});
   applyLocal();S.db=LDB;S.dataReady=true;
   renderAll();renderVids();renderBitpanda();renderArena();renderMails();renderPending();keyBox(document.getElementById("keyBox"));
-  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false)}
+  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false);if(typeof GG!=="undefined"){GG.status();GG.box(document.getElementById("gBox"));if(GG.ok())GG.refresh(true)}}
 
 /* ---------- Alfred über den eigenen Anthropic-Schlüssel ---------- */
 const getSample=async()=>{const key=await openLocal("anthropic");if(!key)return null;
