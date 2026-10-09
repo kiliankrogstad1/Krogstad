@@ -22,18 +22,18 @@ def main(ordner, ziel):
     gm = lade(os.path.join(ordner, "gmail.json"), {}) or {}
     mails = []
     for t in gm.get("threads", [])[:20]:
-        m = (t.get("messages") or [{}])[0]
-        mails.append(dict(subject=m.get("subject", ""), from_=m.get("sender", ""), date=(m.get("date") or "")[:16], snippet=(m.get("snippet") or "")[:140]))
-    for m in mails: m["from"] = m.pop("from_")
+        ms = t.get("messages") or [{}]; m = ms[-1]
+        mails.append(dict(tid=t.get("id", ""), mid=m.get("id", ""), subject=m.get("subject", ""), sender=m.get("sender", ""),
+                          date=m.get("date"), snippet=(m.get("snippet") or "")[:200], url=t.get("viewUrl") or m.get("viewUrl"), count=t.get("messageCount") or len(ms)))
     habits = lade(os.path.join(ordner, "habits", heute + ".json"), {}) or {}
-    br = sorted(glob.glob(os.path.join(ordner, "briefings", heute + "-*.json")))
-    briefing = None
-    if br:
-        b = lade(br[-1], {}) or {}; briefing = dict(datum=heute, text=b.get("text", ""))
+    briefings = {}
+    for f in sorted(glob.glob(os.path.join(ordner, "briefings", heute + "-*.json"))):
+        b = lade(f, {}) or {}
+        if b.get("text"): briefings[os.path.basename(f)[:-5]] = b["text"]
     absences = {os.path.basename(f)[:-5]: lade(f, {}) for f in glob.glob(os.path.join(ordner, "absences", "*.json"))}
     raw = dict(stand=dt.datetime.now(dt.timezone.utc).isoformat()[:16] + "Z", events=events, mails=mails,
                todos=sammlung(ordner, "todos"), goals=sammlung(ordner, "goals"), tasks=sammlung(ordner, "tasks"),
-               habits={k: v for k, v in habits.items() if isinstance(v, bool)}, habits_heute_datum=heute, absences=absences, briefing=briefing,
+               habits={k: v for k, v in habits.items() if isinstance(v, bool)}, habits_heute_datum=heute, absences=absences, briefings=briefings,
                youtube=lade(os.path.join(ordner, "youtube", "latest.json")), videos=lade(os.path.join(ordner, "youtube", "videos.json")),
                arena=lade(os.path.join(ordner, "arena.json")), bitpanda=lade(os.path.join(ordner, "bitpanda.json")))
     json.dump(raw, open(ziel, "w", encoding="utf-8"), ensure_ascii=False)
