@@ -1353,7 +1353,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="3.3";
+const APP_VER="3.4";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -1416,6 +1416,11 @@ KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("v
   inp.addEventListener("focus",()=>{jv.classList.add("typing");setTimeout(()=>{log.scrollTop=log.scrollHeight},300)});inp.addEventListener("blur",()=>setTimeout(()=>jv.classList.remove("typing"),150));
   /* Höhe an den sichtbaren Bereich über der Tastatur anpassen */
   const vv=window.visualViewport;if(vv){const fit=()=>{if(matchMedia("(max-width:820px)").matches&&!jv.hidden){jv.style.height=vv.height+"px";jv.style.top=vv.offsetTop+"px"}else{jv.style.height="";jv.style.top=""}};vv.addEventListener("resize",fit);vv.addEventListener("scroll",fit);new MutationObserver(fit).observe(jv,{attributes:true,attributeFilter:["hidden"]})}})();
+
+/* Kein Rechtsklick-Menü / Entwicklerwerkzeuge per Tastenkürzel (ausser in Eingabefeldern: Kopieren/Einfügen bleibt) */
+addEventListener("contextmenu",e=>{if(!e.target.closest("input,textarea,[contenteditable]"))e.preventDefault()},{capture:true});
+addEventListener("keydown",e=>{const k=(e.key||"").toLowerCase(),c=e.ctrlKey||e.metaKey;
+  if(k==="f12"||(c&&e.shiftKey&&["i","j","c","k"].includes(k))||(c&&e.altKey&&["i","j","c"].includes(k))||(c&&k==="u")){e.preventDefault();e.stopPropagation()}},{capture:true});
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
