@@ -1,4 +1,4 @@
-const APP_VER="2.4";
+const APP_VER="2.5";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -36,7 +36,7 @@ addEventListener("pointerdown",()=>KFS.go(),{once:true,capture:true});
   const mm=el("div","mmenu");mm.id="mmenu";mm.setAttribute("role","dialog");mm.setAttribute("aria-label","Menü");mm.hidden=true;
   const head=el("div","mhead");const lg=el("div","mlogo");const le=el("canvas","eye");le.dataset.size="22";lg.append(le,el("b",null,"KROGSTAD"));
   const xb=el("button","mbtn burger x");xb.type="button";xb.setAttribute("aria-label","Menü schliessen");xb.append(el("i"),el("i"),el("i"));head.append(lg,xb);
-  const grid=el("div","mgrid");nav.querySelectorAll("a").forEach((a,i)=>{const b=el("a",null);b.href=a.getAttribute("href");b.append(el("small",null,String(i+1).padStart(2,"0")),el("span",null,a.textContent));grid.appendChild(b)});
+  const grid=el("div","mgrid");nav.querySelectorAll("a").forEach((a,i)=>{const b=el("a",null);b.href=a.getAttribute("href");const ic=a.querySelector("svg");const top=el("div","mt");top.append(el("small",null,String(i+1).padStart(2,"0")));if(ic){const c=ic.cloneNode(true);c.setAttribute("class","ico mi");top.appendChild(c)}b.append(top,el("span",null,a.textContent.trim()));grid.appendChild(b)});
   const alf=el("a","malfred");alf.href="#";alf.append(el("small",null,"◉"),el("span",null,"Alfred starten"));grid.appendChild(alf);
   const vb=el("div","volbox");const foot=el("div","mrow");const lk=el("button","btn","Sperren");lk.type="button";lk.onclick=()=>{close();window.lockApp&&window.lockApp()};foot.append(lk);
   mm.append(head,grid,vb,foot);document.body.appendChild(mm);

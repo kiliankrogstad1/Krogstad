@@ -127,6 +127,7 @@ html,body{overscroll-behavior-y:none}
 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;align-content:start}
 .mgrid a{display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:84px;padding:14px;border:1px solid var(--line);color:var(--fg);text-decoration:none;font-family:var(--font-mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;background:rgba(95,225,214,.03);transition:border-color .2s,background .2s}
 .mgrid a small{color:var(--muted);font-size:10.5px}
+.mgrid .mt{display:flex;justify-content:space-between;align-items:center}.mgrid .mi{width:24px;height:24px;color:var(--cyan);opacity:.85}
 .mgrid a:active{background:rgba(95,225,214,.12)}
 .mgrid a[aria-current=page]{border-color:var(--cyan);color:var(--cyan);box-shadow:inset 3px 0 0 var(--cyan),0 0 18px -8px var(--cyan)}
 .mgrid a.malfred{border-color:var(--line-hi);color:var(--cyan)}
