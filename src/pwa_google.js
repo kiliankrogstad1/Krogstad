@@ -49,5 +49,7 @@ const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.ap
     if(!CLIENT_ID){const i=el("input");i.type="text";i.placeholder="Google Client-ID (…apps.googleusercontent.com)";i.value=LS.get("g_client","");const s=el("button","btn","Client-ID speichern");s.type="button";s.onclick=()=>{LS.set("g_client",i.value.trim());tc=null;box(bx);status()};bx.append(i,s)}
     const c=el("button","btn","Jetzt verbinden");c.type="button";c.onclick=()=>connect();bx.appendChild(c)}
   setInterval(()=>{if(ok()&&!document.hidden)refresh(false)},10*60e3);
+  /* abgelaufen? beim nächsten Antippen still erneuern (Google erlaubt das nur nach einer Berührung) */
+  let lastTry=0;addEventListener("pointerdown",()=>{if(PW&&cid()&&LS.get("g_ok",0)&&!ok()&&Date.now()-lastTry>60e3){lastTry=Date.now();connect()}},{capture:true,passive:true});
   document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ok()&&Date.now()-LS.get("g_last",0)>5*60e3)refresh(false)});
   return{connect,refresh,status,box,ok}})();

@@ -70,8 +70,8 @@ js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
 js += '\nif("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});\n'
 
 extra = """<style>
-html,body{overscroll-behavior-y:none;overflow-x:hidden}
-@media (max-width:820px){.bar::before,.bar::after{left:0!important;right:0!important}}
+html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
+@media (max-width:820px){.bar::before,.bar::after{left:0!important;right:0!important}.bar,.bar::before{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.bar::before{background:rgba(2,8,13,.98)!important}}
 #stand .gbtn{margin-left:8px;padding:3px 10px;font-size:10.5px}#stand .gl{color:var(--green)}
 #gBox input{background:transparent;border:1px solid var(--line-hi);color:inherit;padding:9px 10px;font-size:14px}
 [hidden]{display:none!important}
@@ -158,8 +158,7 @@ html,body{overscroll-behavior-y:none;overflow-x:hidden}
 .appver{text-align:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim,var(--muted));opacity:.7}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 /* Handy: kein Zoomen der Seite, flüssiges Scrollen, Core nur waagrecht drehen */
-html,body{touch-action:pan-x pan-y}
-@media (pointer:coarse){.nexus canvas{touch-action:pan-y!important}}
+.nexus canvas{touch-action:pan-y!important}
 /* Alfred-Chat und Briefing auf dem Handy gross */
 @media (max-width:820px){
  .jv{inset:0!important;width:auto!important;max-height:none!important;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
