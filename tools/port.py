@@ -29,10 +29,10 @@ body = cut(body, '<div class="lock"', '<div class="wrap"',
            '<button class="jarvis-btn" type="submit" id="lockBtn"><i></i>Entsperren</button><div class="lmsg" id="lockMsg" role="status"></div></form></div>\n')
 body = rep(body, '  </div>\n\n  <!-- HOME -->', '  </div>\n  <p class="note" id="stand" style="margin:0 0 8px">–</p>\n\n  <!-- HOME -->')
 i = body.index('<section class="panel" aria-labelledby="h13">'); j = body.index("</section>", i) + 10
-body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit & Alfred</h2><div class="meta">dieses Gerät</div></div>\n'
+body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit, Klang & Alfred</h2><div class="meta">dieses Gerät</div></div>\n'
                    '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n'
                    '      <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>\n'
-                   '      <p class="note" id="pendBox"></p>\n    </section>') + body[j:]
+                   '      <div class="volbox" id="volSec"></div>\n      <p class="note" id="pendBox"></p>\n    </section>') + body[j:]
 body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wird nie automatisch, nur gespeichert als Entwurf in Gmail.',
            'Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.')
 body = rep(body, '<p class="note">Routine aus deiner Wochenvorlage', '<p class="note">App · Daten verschlüsselt, Abgleich 3× täglich · Routine aus deiner Wochenvorlage')
@@ -52,11 +52,13 @@ js = rep(js, 'save.onclick=async()=>{if(!S.mcp)return;',
 js = rep(js, 'const save=el("button","jarvis-btn","Als Entwurf in Gmail speichern")', 'const save=el("button","jarvis-btn","Antwort kopieren")')
 js = rep(js, 'if(!smp&&!log.dataset.na){log.dataset.na="1";log.appendChild(el("div","msg ai","Alfred ist in dieser Ansicht nicht verfügbar."))}',
          'keyBox(document.getElementById("jvKey"));if(!smp&&!log.dataset.na){log.dataset.na="1";log.appendChild(el("div","msg ai","Für Gespräche brauche ich Ihren Anthropic-Schlüssel, Sir – unten eintragen."))}')
+js = rep(js, 'q=inp.value.trim();const smp=', 'q=inp.value.trim();{const kr=typeof KAudio!=="undefined"&&q&&KAudio.command(q);if(kr){inp.value="";log.appendChild(el("div","msg me",q));log.appendChild(el("div","msg ai",kr));log.scrollTop=log.scrollHeight;return}}const smp=')
 js = rep(js, 'const smp=await getSample();if(!q||!smp)return;', 'const smp=await getSample();if(!q)return;if(!smp){keyBox(document.getElementById("jvKey"));return}')
 js = rep(js, ':"Verzeihung, Sir, das hat nicht geklappt."}', ':err&&err.code==="offline"?"Ich bin offline, Sir. Gespräche gehen nur mit Internet.":"Verzeihung, Sir: "+String(err&&err.message||"Fehler").slice(0,120)}')
 for bad in ("claude.use(\"mcp\")", "MYMAIL", "OFF_TPL", "krogChangePw"):
     assert bad not in js or bad == 'claude.use("mcp")', bad
 js = rep(js, '["finanzen","Finanzen","offen","--violet"]', '["finanzen","Finanzen",S.bitpanda?Math.round(S.bitpanda.total_chf)+" CHF":"–","--violet"]')
+js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
 js += '\nif("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});\n'
 
@@ -101,27 +103,45 @@ html,body{overscroll-behavior-y:none}
 .sp-hello{min-height:1.4em;font-family:var(--font-mono);font-size:14px;letter-spacing:.08em;color:var(--cyan);margin-top:14px}
 .splash.t1 .sp-title{opacity:1;transform:none;letter-spacing:.3em;margin-left:.3em}.splash.t2 .sp-by{opacity:1}
 /* Kopfzeile Handy */
-.mright,.mmenu{display:none}
+.mright{display:none}
+.mmenu[hidden]{display:none!important}
 @media (max-width:820px){
- .bar{flex-wrap:nowrap;justify-content:space-between;padding-block:10px}
+ .bar{flex-wrap:nowrap;justify-content:space-between;padding-block:10px;margin-inline:calc(50% - 50vw);padding-inline:calc(50vw - 50% + 2px);margin-top:calc(-1 * env(safe-area-inset-top,0px));padding-top:calc(10px + env(safe-area-inset-top,0px));border-radius:0}
  .bar .nav,.bar .clock,#jvOpen,#lockNow{display:none!important}
  .logo{font-size:0;gap:8px}.logo b{font-size:15px}
  .mright{display:flex;align-items:center;gap:10px}
  .mclock{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;font-family:var(--font-mono)}
  .mclock small{white-space:nowrap;font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
  .mclock b{font-family:var(--font-display);font-size:19px;color:var(--cyan);text-shadow:0 0 10px rgba(95,225,214,.45);font-weight:600}
- .mbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(95,225,214,.06);display:grid;place-items:center;padding:0;cursor:pointer}
- .burger{display:flex;flex-direction:column;justify-content:center;gap:4px}
- .burger i{display:block;width:16px;height:1.5px;background:var(--cyan);transition:transform .25s ease,opacity .2s}
- .burger.x i:nth-child(1){transform:translateY(5.5px) rotate(45deg)}.burger.x i:nth-child(2){opacity:0}.burger.x i:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
- .mmenu{display:block;position:sticky;top:60px;z-index:6;max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .25s ease;background:rgba(2,7,11,.97);border-bottom:1px solid transparent}
- .mmenu.on{max-height:520px;opacity:1;border-bottom-color:var(--line-hi);box-shadow:0 18px 40px rgba(0,0,0,.7)}
- .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0}
- .mgrid a{display:flex;align-items:baseline;gap:10px;padding:12px;border:1px solid var(--line);color:var(--fg);text-decoration:none;font-family:var(--font-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;background:rgba(95,225,214,.03)}
- .mgrid a small{color:var(--dim,var(--muted));font-size:10px}
- .mgrid a[aria-current=page]{border-color:var(--cyan);color:var(--cyan);box-shadow:inset 2px 0 0 var(--cyan)}
- .mrow{display:flex;justify-content:flex-end;padding:0 0 12px}
 }
+.mbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(95,225,214,.06);display:grid;place-items:center;padding:0;cursor:pointer}
+.burger{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px}
+.burger i{display:block;width:16px;height:1.5px;background:var(--cyan);transition:transform .25s ease,opacity .2s}
+.burger.x i:nth-child(1){transform:translateY(5.5px) rotate(45deg)}.burger.x i:nth-child(2){opacity:0}.burger.x i:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+/* Menü über den ganzen Bildschirm */
+.mmenu{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;gap:14px;padding:calc(12px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto;
+ background:radial-gradient(ellipse at 50% 0%,rgba(95,225,214,.10),transparent 60%),var(--bg,#02070b);opacity:0;transform:scale(1.03);transition:opacity .25s ease,transform .25s ease}
+.mmenu.on{opacity:1;transform:none}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.mlogo{display:flex;align-items:center;gap:8px}.mlogo b{font-family:var(--font-display);letter-spacing:.16em;font-size:15px;color:var(--fg)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;align-content:start}
+.mgrid a{display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:84px;padding:14px;border:1px solid var(--line);color:var(--fg);text-decoration:none;font-family:var(--font-mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;background:rgba(95,225,214,.03);transition:border-color .2s,background .2s}
+.mgrid a small{color:var(--muted);font-size:10.5px}
+.mgrid a:active{background:rgba(95,225,214,.12)}
+.mgrid a[aria-current=page]{border-color:var(--cyan);color:var(--cyan);box-shadow:inset 3px 0 0 var(--cyan),0 0 18px -8px var(--cyan)}
+.mgrid a.malfred{border-color:var(--line-hi);color:var(--cyan)}
+.mrow{display:flex;justify-content:flex-end}
+.volbox{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.vol{display:grid;grid-template-columns:110px 1fr 48px;align-items:center;gap:10px;font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.vol b{color:var(--cyan);font-weight:500;text-align:right}
+.vol input{-webkit-appearance:none;appearance:none;height:3px;background:var(--line-hi);border-radius:3px;outline:none}
+.vol input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bg,#02070b);border:2px solid var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.vol input::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--bg,#02070b);border:2px solid var(--cyan)}
+/* Start: Alfred schläft, bis man antippt (nur wenn Ton an) */
+.sp-wake{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .6s ease;position:absolute;bottom:18%}
+.splash.wait .sp-wake{opacity:1;animation:breathe 2.4s ease-in-out infinite}
+.splash.wait .sp-eye{animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]
 head = ('<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
