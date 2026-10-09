@@ -1,4 +1,4 @@
-const APP_VER="2.9";
+const APP_VER="3.0";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
@@ -48,3 +48,9 @@ addEventListener("pointerdown",()=>KFS.go(),{once:true,capture:true});
   ab.onclick=()=>{const j=document.getElementById("jvOpen");j&&j.click()};
   const W=["So","Mo","Di","Mi","Do","Fr","Sa"];const tick=()=>{const n=new Date();mc.textContent="";mc.append(el("small",null,W[n.getDay()]+" "+String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."),el("b",null,String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")))};tick();setInterval(tick,15000)})();
 KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("volSec"));
+
+/* Briefing antippen → gross lesen, ✕ → zurück */
+(function(){const b=document.getElementById("brief");if(!b)return;b.title="Antippen zum Vergrössern";b.addEventListener("click",()=>{if(document.querySelector(".zoomview"))return;
+  const z=el("div","zoomview");const x=el("button","zx","✕");x.type="button";x.setAttribute("aria-label","Schliessen");const k=document.getElementById("briefKind");
+  z.append(x,el("div","zt","// Alfred · "+(k?k.textContent:"Briefing")),el("div","zb",b.textContent));document.body.appendChild(z);document.body.style.overflow="hidden";
+  x.onclick=()=>{z.remove();document.body.style.overflow=""}})})();

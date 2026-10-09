@@ -157,9 +157,23 @@ html,body{overscroll-behavior-y:none;overflow-x:hidden}
 .vol.fsrow input{justify-self:start;width:20px;height:20px;accent-color:var(--cyan)}
 .appver{text-align:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim,var(--muted));opacity:.7}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+/* Handy: kein Zoomen der Seite, flüssiges Scrollen, Core nur waagrecht drehen */
+html,body{touch-action:pan-x pan-y}
+@media (pointer:coarse){.nexus canvas{touch-action:pan-y!important}}
+/* Alfred-Chat und Briefing auf dem Handy gross */
+@media (max-width:820px){
+ .jv{inset:0!important;width:auto!important;max-height:none!important;border-radius:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))!important;z-index:60!important;animation:jvin .25s ease}
+ .jv .log{flex:1;max-height:none!important}.jv .msg{font-size:16px;line-height:1.5}
+}
+@keyframes jvin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.zoomview{position:fixed;inset:0;z-index:65;background:var(--bg,#02070b);overflow-y:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 30px;animation:jvin .25s ease}
+.zoomview .zx{position:sticky;top:0;float:right;width:42px;height:42px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(2,7,11,.9);color:var(--cyan);font-size:20px;cursor:pointer}
+.zoomview .zt{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:8px 0 14px}
+.zoomview .zb{font-size:19px;line-height:1.6;white-space:pre-wrap;clear:both}
+#brief{cursor:zoom-in}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]
-head = ('<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+head = ('<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">'
         '<title>Krogstad</title><meta name="theme-color" content="#02070b"><link rel="manifest" href="manifest.webmanifest">'
         '<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">' + fonts)
 html = head + style + extra + "</head><body>\n" + body + "<script>" + js + "</script></body></html>"
