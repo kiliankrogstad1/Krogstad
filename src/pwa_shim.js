@@ -79,12 +79,20 @@ function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled")
 
 /* ---------- Alfred über den eigenen Anthropic-Schlüssel ---------- */
 const getSample=async()=>{const key=await openLocal("anthropic");if(!key)return null;
-  const smp=async(p,o={})=>{if(!navigator.onLine)throw{code:"offline"};const msgs=typeof p==="string"?[{role:"user",content:p}]:p;
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:900,messages:msgs})});
-    const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":"api",message:(j.error&&j.error.message)||String(r.status)};
-    const text=(j.content||[]).map(c=>c.text||"").join("");if(o.onText)o.onText({text});return{text}};
-  smp.limits=async()=>({tools:false});return smp};
+  /* Alfred über die Anthropic-API, mit Werkzeugen (Termin eintragen, Abwesenheit …) */
+  const smp=async(p,o={})=>{if(!navigator.onLine)throw{code:"offline"};const conv=(typeof p==="string"?[{role:"user",content:p}]:p).slice();const tools=o.tools||[];
+    const T=tools.map(t=>({name:t.name,description:t.description||"",input_schema:t.inputSchema||{type:"object",properties:{}}}));let all="";
+    for(let k=0;k<6;k++){const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify(Object.assign({model:"claude-haiku-4-5-20251001",max_tokens:900,messages:conv},T.length?{tools:T}:{}))});
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":"api",message:(j.error&&j.error.message)||String(r.status)};
+      const txt=(j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");if(txt){all+=(all?"\n":"")+txt;if(o.onText)o.onText({text:all})}
+      const uses=(j.content||[]).filter(c=>c.type==="tool_use");if(j.stop_reason!=="tool_use"||!uses.length)return{text:all};
+      conv.push({role:"assistant",content:j.content});const res=[];
+      for(const u of uses){const tl=tools.find(t=>t.name===u.name);let out;try{out=tl?await tl.execute(u.input||{}):{fehler:"unbekanntes Werkzeug"}}catch(e){out={fehler:String(e&&e.message||e)}}
+        res.push({type:"tool_result",tool_use_id:u.id,content:JSON.stringify(out===undefined?{ok:true}:out)})}
+      conv.push({role:"user",content:res})}
+    return{text:all}};
+  smp.limits=async()=>({tools:true});return smp};
 async function keyBox(box){if(!box)return;box.textContent="";const k=PW?await openLocal("anthropic"):null;
   if(k){box.appendChild(el("div","ast","Anthropic-Schlüssel ist verschlüsselt auf diesem Gerät gespeichert. Alfred kann sprechen."));const x=el("button","btn","Schlüssel entfernen");x.type="button";
     x.onclick=()=>{LS.set("sec_anthropic",null);keyBox(box);keyBox(document.getElementById("jvKey"))};box.appendChild(x);if(box.id==="jvKey")box.hidden=true;return}

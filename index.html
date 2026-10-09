@@ -522,12 +522,20 @@ function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled")
 
 /* ---------- Alfred über den eigenen Anthropic-Schlüssel ---------- */
 const getSample=async()=>{const key=await openLocal("anthropic");if(!key)return null;
-  const smp=async(p,o={})=>{if(!navigator.onLine)throw{code:"offline"};const msgs=typeof p==="string"?[{role:"user",content:p}]:p;
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:900,messages:msgs})});
-    const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":"api",message:(j.error&&j.error.message)||String(r.status)};
-    const text=(j.content||[]).map(c=>c.text||"").join("");if(o.onText)o.onText({text});return{text}};
-  smp.limits=async()=>({tools:false});return smp};
+  /* Alfred über die Anthropic-API, mit Werkzeugen (Termin eintragen, Abwesenheit …) */
+  const smp=async(p,o={})=>{if(!navigator.onLine)throw{code:"offline"};const conv=(typeof p==="string"?[{role:"user",content:p}]:p).slice();const tools=o.tools||[];
+    const T=tools.map(t=>({name:t.name,description:t.description||"",input_schema:t.inputSchema||{type:"object",properties:{}}}));let all="";
+    for(let k=0;k<6;k++){const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify(Object.assign({model:"claude-haiku-4-5-20251001",max_tokens:900,messages:conv},T.length?{tools:T}:{}))});
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":"api",message:(j.error&&j.error.message)||String(r.status)};
+      const txt=(j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");if(txt){all+=(all?"\n":"")+txt;if(o.onText)o.onText({text:all})}
+      const uses=(j.content||[]).filter(c=>c.type==="tool_use");if(j.stop_reason!=="tool_use"||!uses.length)return{text:all};
+      conv.push({role:"assistant",content:j.content});const res=[];
+      for(const u of uses){const tl=tools.find(t=>t.name===u.name);let out;try{out=tl?await tl.execute(u.input||{}):{fehler:"unbekanntes Werkzeug"}}catch(e){out={fehler:String(e&&e.message||e)}}
+        res.push({type:"tool_result",tool_use_id:u.id,content:JSON.stringify(out===undefined?{ok:true}:out)})}
+      conv.push({role:"user",content:res})}
+    return{text:all}};
+  smp.limits=async()=>({tools:true});return smp};
 async function keyBox(box){if(!box)return;box.textContent="";const k=PW?await openLocal("anthropic"):null;
   if(k){box.appendChild(el("div","ast","Anthropic-Schlüssel ist verschlüsselt auf diesem Gerät gespeichert. Alfred kann sprechen."));const x=el("button","btn","Schlüssel entfernen");x.type="button";
     x.onclick=()=>{LS.set("sec_anthropic",null);keyBox(box);keyBox(document.getElementById("jvKey"))};box.appendChild(x);if(box.id==="jvKey")box.hidden=true;return}
@@ -955,6 +963,28 @@ function eventCard(e){const box=el("div","act");const s=new Date(e.start.dateTim
     fb.append(ai,sv);f.append(to,sub,ta,fb,fst);box.appendChild(f)};
   return box}
 
+/* ---------- Alfred trägt Termine ein ---------- */
+function evTimes(i){const allDay=!!i.allDay||/^\d{4}-\d{2}-\d{2}$/.test(i.start);const pad2=n=>String(n).padStart(2,"0");
+  if(allDay){const d=i.start.slice(0,10),e=(i.end||d).slice(0,10);const x=new Date(e+"T12:00");x.setDate(x.getDate()+1);return{allDay,start:d,end:ymd(x),endIncl:e}}
+  const s=new Date(i.start.slice(0,16));let e=i.end?new Date(i.end.slice(0,16)):new Date(s.getTime()+36e5);if(!(e>s))e=new Date(s.getTime()+36e5);
+  const f=d=>ymd(d)+"T"+pad2(d.getHours())+":"+pad2(d.getMinutes())+":00";return{allDay,start:f(s),end:f(e),s,e}}
+function gcalLink(i,t){const z=x=>x.replace(/[-:]/g,"");const dates=t.allDay?t.start.replace(/-/g,"")+"/"+t.end.replace(/-/g,""):z(t.start)+"/"+z(t.end);
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(i.title)+"&dates="+dates+"&ctz=Europe/Zurich"+(i.location?"&location="+encodeURIComponent(i.location):"")+(i.note?"&details="+encodeURIComponent(i.note):"")}
+function evLabel(i,t){if(t.allDay){const d=pDate(t.start);return WDL[d.getDay()]+" "+d.getDate()+"."+(d.getMonth()+1)+". · ganztägig"}return WDL[t.s.getDay()]+" "+t.s.getDate()+"."+(t.s.getMonth()+1)+". · "+hm(t.s)+"–"+hm(t.e)}
+async function createEvent(i){const t=evTimes(i),box=el("div","act");box.style.borderLeftColor="var(--green)";const st=el("div","ast","");
+  box.appendChild(el("div",null,"Termin: "+i.title+" · "+evLabel(i,t)+(i.location?" · "+i.location:"")));
+  if(S.mcp){try{const r=await S.mcp.callTool("Google Calendar","create_event",Object.assign({summary:i.title,startTime:t.start,endTime:t.end,allDay:t.allDay,notificationLevel:"NONE"},i.location?{location:i.location}:{},i.note?{description:i.note}:{}));
+      const p=(r&&r.payload)||{},id=p.id||(p.event&&p.event.id)||null;st.textContent="Im Google Kalender eingetragen.";eyeHappy(1500);
+      try{await S.mcp.invalidate("Google Calendar","list_events")}catch(_){}
+      if(id){const u=el("button","btn","Rückgängig");u.type="button";u.onclick=async()=>{u.disabled=true;st.textContent="Lösche …";
+        try{await S.mcp.callTool("Google Calendar","delete_event",{eventId:id,notificationLevel:"NONE"});st.textContent="Wieder entfernt.";try{await S.mcp.invalidate("Google Calendar","list_events")}catch(_){}}catch(e){u.disabled=false;st.textContent="Entfernen hat nicht geklappt – bitte im Kalender löschen."}};
+        const row=el("div","row-btns");row.appendChild(u);box.appendChild(row)}
+      box.appendChild(st);return{card:box,info:{eingetragen:true,titel:i.title,wann:evLabel(i,t)}}}
+    catch(e){st.textContent=e&&e.code==="not_granted"?"Kalender-Zugriff für diese Seite erlauben, dann nochmals versuchen.":"Direkt eintragen hat nicht geklappt – unten mit einem Tipp eintragen."}}
+  const a=el("a","jarvis-btn","In Google Kalender eintragen");a.href=gcalLink(i,t);a.target="_blank";a.rel="noopener";const row=el("div","row-btns");row.appendChild(a);
+  if(!st.textContent)st.textContent="Ein Tipp öffnet Google Kalender mit allem ausgefüllt – dort auf „Speichern“.";box.append(row,st);
+  return{card:box,info:{eingetragen:false,vorbereitet:true,hinweis:"Kilian muss in der Karte auf 'In Google Kalender eintragen' tippen und dort speichern.",titel:i.title,wann:evLabel(i,t)}}}
+
 /* ---------- Alfred Chat ---------- */
 const jv=document.getElementById("jv"),log=document.getElementById("jvLog");let hist=[];
 async function openAlfred(){jv.hidden=false;document.getElementById("jvIn").focus();const smp=await getSample();keyBox(document.getElementById("jvKey"));if(!smp&&!log.dataset.na){log.dataset.na="1";log.appendChild(el("div","msg ai","Für Gespräche brauche ich Ihren Anthropic-Schlüssel, Sir – unten eintragen."))}}
@@ -963,16 +993,18 @@ document.getElementById("jvForm").onsubmit=async e=>{e.preventDefault();const in
   log.appendChild(el("div","msg me",q));const a=el("div","msg ai","…");log.appendChild(a);log.scrollTop=log.scrollHeight;
   hist.push({role:"user",content:q});const cards=[];let canTools=false;try{canTools=!!(await smp.limits()).tools}catch(_){}
   const cal=[...Array(21)].map((_,i)=>{const d=addDays(sod(new Date()),i);return WD[d.getDay()]+" "+d.getDate()+"."+(d.getMonth()+1)+".="+ymd(d)}).join(", ");
-  const rules=canTools?" Du kannst Abwesenheiten eintragen: Sagt Kilian, er sei an einem Tag krank oder abwesend, rufe mark_absence mit dem richtigen Datum auf (nutze die DATUMSTABELLE). Termine an diesen Tagen sagst du NICHT selbst ab und schreibst keine Mails: das Werkzeug zeigt ihm Karten mit Knöpfen, mit denen er selbst bestätigt (im Kalender als abgesagt markieren, Mail-Entwurf für neuen Termin). Erwähne das kurz. Andere Änderungen (To-dos usw.) soll er Claude im Chat schreiben.":" Wenn Kilian etwas ändern will, sag ihm, dass er es Claude im Chat schreiben soll – du kannst hier nur lesen und beraten.";
+  const rules=canTools?" Du kannst Abwesenheiten eintragen: Sagt Kilian, er sei an einem Tag krank oder abwesend, rufe mark_absence mit dem richtigen Datum auf (nutze die DATUMSTABELLE). Termine an diesen Tagen sagst du NICHT selbst ab und schreibst keine Mails: das Werkzeug zeigt ihm Karten mit Knöpfen, mit denen er selbst bestätigt (im Kalender als abgesagt markieren, Mail-Entwurf für neuen Termin). Erwähne das kurz. Du kannst auch Termine eintragen: Will Kilian einen Termin, eine Erinnerung oder einen Eintrag im Kalender, rufe create_event auf (Datum aus der DATUMSTABELLE, Zeiten in Zürcher Ortszeit, ohne Endzeit 1 Stunde Dauer). Fehlen Tag oder Uhrzeit, frag kurz nach statt zu raten. Bestätige danach knapp, was eingetragen ist; er kann es mit einem Knopf rückgängig machen. Andere Änderungen (To-dos usw.) soll er Claude im Chat schreiben.":" Wenn Kilian etwas ändern will, sag ihm, dass er es Claude im Chat schreiben soll – du kannst hier nur lesen und beraten.";
   const turns=[{role:"user",content:ALFRED+rules+"\n\nJetzt: "+new Date().toLocaleString("de-CH")+"\nDATUMSTABELLE: "+cal+"\n\n"+contextText()+"\n\nFrage: "+hist[0].content}].concat(hist.slice(1));
   const evInfo=e=>({eventId:e.id,titel:e.summary,beginn:e.start.dateTime||e.start.date,ort:e.location||""});
   const tools=[{name:"mark_absence",description:"Trägt Kilian als krank/abwesend ein (von–bis, inkl.). Routine (Arbeit, Schule, Gym) wird an diesen Tagen durchgestrichen. Gibt die Kalendertermine dieser Tage zurück; für jeden zeigt die Seite automatisch eine Bestätigungs-Karte.",inputSchema:{type:"object",properties:{from:{type:"string",description:"YYYY-MM-DD"},to:{type:"string",description:"YYYY-MM-DD, optional"},reason:{type:"string",description:"z. B. Krank, Arzt, Ferien"}},required:["from"]},
       execute:async i=>{const r=await setAbsence(i.from,i.to||i.from,i.reason||"Krank");r.forEach(e=>cards.push(e));return{eingetragen:true,tage:i.from+(i.to&&i.to!==i.from?" bis "+i.to:""),termine:r.map(evInfo)}}},
     {name:"clear_absence",description:"Entfernt eine eingetragene Abwesenheit (von–bis).",inputSchema:{type:"object",properties:{from:{type:"string"},to:{type:"string"}},required:["from"]},execute:async i=>{await clearAbsence(i.from,i.to||i.from);return{ok:true}}},
+    {name:"create_event",description:"Trägt einen neuen Termin in Kilians Google Kalender ein. Zeiten als Zürcher Ortszeit ohne Offset (YYYY-MM-DDTHH:MM). Für ganztägige Einträge allDay true und nur das Datum.",inputSchema:{type:"object",properties:{title:{type:"string",description:"Titel des Termins"},start:{type:"string",description:"Beginn YYYY-MM-DDTHH:MM oder YYYY-MM-DD bei ganztägig"},end:{type:"string",description:"Ende, optional (Standard: 1 Stunde später bzw. gleicher Tag)"},allDay:{type:"boolean"},location:{type:"string"},note:{type:"string",description:"Beschreibung, optional"}},required:["title","start"]},
+      execute:async i=>{const r=await createEvent(i);cards.push({el:r.card});return r.info}},
     {name:"show_event_card",description:"Zeigt Kilian zu einem Kalendertermin eine Karte mit Knöpfen: im Kalender als abgesagt markieren und Mail-Entwurf für einen neuen Termin. Nur anzeigen, nichts wird ohne seinen Klick geändert.",inputSchema:{type:"object",properties:{date:{type:"string",description:"YYYY-MM-DD des Termins"},title:{type:"string",description:"Teil des Termintitels"}},required:["date"]},
       execute:async i=>{const l=evOn(pDate(i.date)).filter(e=>!i.title||(e.summary||"").toLowerCase().includes(String(i.title).toLowerCase()));l.forEach(e=>cards.push(e));return{gefunden:l.map(evInfo)}}}];
   eyeBusy(true);try{const r=await smp(turns,Object.assign({cache:false,onText:({text})=>{a.textContent=text;log.scrollTop=log.scrollHeight}},canTools?{tools}:{}));a.textContent=r.text;hist.push({role:"assistant",content:r.text});
-    const seen=new Set();for(const e of cards){if(!e.id||seen.has(e.id))continue;seen.add(e.id);a.appendChild(eventCard(e))}log.scrollTop=log.scrollHeight}
+    const seen=new Set();for(const e of cards){if(e.el){a.appendChild(e.el);continue}if(!e.id||seen.has(e.id))continue;seen.add(e.id);a.appendChild(eventCard(e))}log.scrollTop=log.scrollHeight}
   catch(err){hist.pop();a.textContent=err&&err.code==="rate_limited"?"Einen Moment, Sir – zu viele Anfragen.":err&&err.code==="not_granted"?"Ich benötige Ihre Erlaubnis (Berechtigungen der Seite).":err&&err.code==="offline"?"Ich bin offline, Sir. Gespräche gehen nur mit Internet.":"Verzeihung, Sir: "+String(err&&err.message||"Fehler").slice(0,120)}finally{eyeBusy(false)}};
 
 route();renderAll();startLoop();setInterval(()=>{renderAll();const si=slotInfo(new Date());if(S.dataReady&&S.lastSlot&&S.lastSlot!==si.key)runBriefing(false);S.lastSlot=si.key},60000);
