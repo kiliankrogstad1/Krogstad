@@ -412,8 +412,9 @@ html,body{overscroll-behavior-y:none}
       <p class="note">Ungelesene Mails im Posteingang (ohne Werbung, Social, Updates) der letzten 30 Tage. Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.</p>
     </section>
     <section class="panel" aria-labelledby="h11">
-      <div class="ph"><h2 id="h11"><span>05</span> // WhatsApp</h2><div class="meta">nicht verbunden</div></div>
-      <div class="item" style="--c:var(--green)"><div class="b"><div>WhatsApp hat keine Schnittstelle für Claude</div><div>WhatsApp erlaubt keinen Zugriff auf private Chats von aussen. Alternative: Nachricht an Claude im Chat weiterleiten, Alfred hilft beim Antworten.</div></div></div>
+      <div class="ph"><h2 id="h11"><span>05</span> // Crogstad · contact@crogstad.com</h2><div class="meta" id="cmailMeta">lädt</div></div>
+      <div id="cmails"></div>
+      <p class="note">Mails an contact@crogstad.com, die Infomaniak an Gmail weiterleitet. Antworten wie bei Gmail als Entwurf.</p>
     </section>
   </div>
 
@@ -595,7 +596,7 @@ function renderPending(){const b=document.getElementById("pendBox");if(!b)return
 function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled");S.calLoaded=true;S.calError=null;
   S.todos=(D.todos||[]).map(x=>Object.assign({},x));S.goals=(D.goals||[]).map(x=>Object.assign({},x));
   S.tasks=(D.tasks||[]).slice().sort((a,b)=>String(b.updated||"").localeCompare(String(a.updated||""))).slice(0,30);
-  S.mails=(D.mails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||m.from||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));S.mailError=null;
+  S.mails=(D.mails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||m.from||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));S.mailError=null;S.cmails=(D.cmails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));
   S.yt=D.youtube||null;S.vids=D.videos||null;S.arena=D.arena||null;S.bitpanda=D.bitpanda||null;S.absent=Object.assign({},D.absences||{});
   S.habits=D.habits_heute_datum===ymd(new Date())?Object.assign({},D.habits||{}):{};
   S.briefings=D.briefings||(D.briefing?{[D.briefing.datum+"-x"]:D.briefing.text}:{});
@@ -823,15 +824,17 @@ function renderVids(){const box=document.getElementById("vids");if(!box)return;b
 let mailsLoading=false;
 async function loadMails(force){if(mailsLoading||(S.mails&&!force))return;mailsLoading=true;const meta=document.getElementById("mailMeta");meta.textContent="lädt";
   try{if(!S.mcp)S.mcp=await claude.use("mcp");if(!S.mcp){S.mailError="Gmail in dieser Ansicht nicht verfügbar"}else{
-    const r=await S.mcp.callTool("Gmail","search_threads",{query:"in:inbox is:unread -category:promotions -category:social -category:updates -category:forums newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});
-    const p=r.payload||{};S.mails=(p.threads||[]).map(t=>{const m=(t.messages||[])[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl||m.viewUrl,count:t.messageCount||1}});S.mailError=null}}
+    const r=await S.mcp.callTool("Gmail","search_threads",{query:"in:inbox is:unread -category:promotions -category:social -category:updates -category:forums -to:contact@crogstad.com -deliveredto:contact@crogstad.com newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});
+    const p=r.payload||{};const mapT=th=>(th||[]).map(t=>{const m=(t.messages||[])[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl||m.viewUrl,count:t.messageCount||1}});S.mails=mapT(p.threads);S.mailError=null;
+    try{const r2=await S.mcp.callTool("Gmail","search_threads",{query:"(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) is:unread newer_than:30d",pageSize:15},{cache:{staleTime:120000,gcTime:600000}});S.cmails=mapT((r2.payload||{}).threads)}catch(_){S.cmails=S.cmails||[]}}}
   catch(e){const c=e&&e.code;S.mailError=c==="needs_reauth"?"Gmail neu verbinden (Einstellungen → Connectors)":c==="server_not_connected"?"Gmail unter Connectors hinzufügen":["not_in_manifest","not_granted","approval_required"].includes(c)?"Gmail für diese Seite nicht erlaubt":"Gmail gerade nicht erreichbar"}
   mailsLoading=false;renderMails();drawNexusData()}
-function renderMails(){const box=document.getElementById("mails");box.textContent="";const meta=document.getElementById("mailMeta");
+function renderMails(){renderMailBox("mails","mailMeta",S.mails,"Nichts offen. Posteingang sauber, Sir.");renderMailBox("cmails","cmailMeta",S.cmails,"Keine ungelesenen Crogstad-Mails.")}
+function renderMailBox(bid,mid,list,emptyTxt){const box=document.getElementById(bid);if(!box)return;box.textContent="";const meta=document.getElementById(mid);
   if(S.mailError){meta.textContent="Fehler";box.appendChild(el("div","empty",S.mailError));return}
-  if(!S.mails){meta.textContent="lädt";box.appendChild(el("div","empty","Posteingang wird gelesen …"));return}
-  meta.textContent=S.mails.length+" ungelesen";if(!S.mails.length){box.appendChild(el("div","empty","Nichts offen. Posteingang sauber, Sir."));return}
-  for(const m of S.mails){const it=el("div","item mail");it.style.setProperty("--c","var(--cyan)");const b=el("div","b");
+  if(!list){meta.textContent="lädt";box.appendChild(el("div","empty","Posteingang wird gelesen …"));return}
+  meta.textContent=list.length+" ungelesen";if(!list.length){box.appendChild(el("div","empty",emptyTxt));return}
+  for(const m of list){const it=el("div","item mail");it.style.setProperty("--c","var(--cyan)");const b=el("div","b");
     const d=m.date?new Date(m.date):null;b.appendChild(el("b",null,m.sender.replace(/<.*>/,"").trim()+(d?" · "+d.getDate()+"."+(d.getMonth()+1)+". "+hm(d):"")));
     b.appendChild(el("div","subj",m.subject));b.appendChild(el("div",null,m.snippet.replace(/[͏\s]+/g," ").slice(0,160)));
     const row=el("div","row-btns");const open=el("a","btn","In Gmail öffnen");open.href=m.url;open.target="_blank";open.rel="noopener";
@@ -1147,7 +1150,7 @@ const LIFE=(()=>{const YT_CH="UCZBMUZzwB1OQs1qtirU_gwQ";
   const mood=r=>r>=.15?"happy":r<=-.15?"sad":"calm";
   function decorateNav(){document.querySelectorAll("#nav a").forEach(a=>{if(a.querySelector("svg"))return;const v=a.getAttribute("href").slice(1);a.insertAdjacentHTML("afterbegin",svg(v==="home"?"home":v,"ico ni"))});
     const jb=document.getElementById("jvOpen");document.querySelectorAll(".view .ph h2").forEach(h=>{if(h.querySelector("svg.hi"))return;const v=(h.closest(".view")||{}).dataset;const k=v&&v.view;if(!k||k==="home")return;
-      const s=h.querySelector("span");(s||h).insertAdjacentHTML(s?"afterend":"afterbegin"," "+svg(/Gmail/.test(h.textContent)?"mail":/WhatsApp/.test(h.textContent)?"nachrichten":/Habits/.test(h.textContent)?"bolt":/Bildschirm/.test(h.textContent)?"alfred":/Aufgaben/.test(h.textContent)?"check":/Sicherheit/.test(h.textContent)?"alfred":k,"ico hi"))})}
+      const s=h.querySelector("span");(s||h).insertAdjacentHTML(s?"afterend":"afterbegin"," "+svg(/Gmail/.test(h.textContent)?"mail":/Crogstad/.test(h.textContent)?"globe":/Habits/.test(h.textContent)?"bolt":/Bildschirm/.test(h.textContent)?"alfred":/Aufgaben/.test(h.textContent)?"check":/Sicherheit/.test(h.textContent)?"alfred":k,"ico hi"))})}
   function decorateDay(){document.querySelectorAll("#timeline > li").forEach(li=>{const c=li.querySelector(".c");if(!c||c.querySelector(".illu"))return;const t=(c.querySelector("b")||{}).textContent;c.insertAdjacentHTML("beforeend",A[kindOf(t)]||A.cal);c.classList.add("has-illu")})}
   function decorateTodos(){document.querySelectorAll("#todoCols .item").forEach(it=>{if(it.querySelector(".ti"))return;const b=it.querySelector(".b");if(!b)return;b.insertAdjacentHTML("beforebegin",svg(todoIcon(b.textContent),"ico ti"))})}
   function decorateArena(){const A2=S.arena;if(!A2)return;document.querySelectorAll("#arena .ar-tab tr").forEach(tr=>{const b=tr.querySelector("td b");if(!b||tr.querySelector(".pet"))return;const bot=(A2.bots||[]).find(x=>x.name===b.textContent);if(!bot)return;
@@ -1265,7 +1268,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="2.5";
+const APP_VER="2.6";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}

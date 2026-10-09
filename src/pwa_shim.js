@@ -69,7 +69,7 @@ function renderPending(){const b=document.getElementById("pendBox");if(!b)return
 function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled");S.calLoaded=true;S.calError=null;
   S.todos=(D.todos||[]).map(x=>Object.assign({},x));S.goals=(D.goals||[]).map(x=>Object.assign({},x));
   S.tasks=(D.tasks||[]).slice().sort((a,b)=>String(b.updated||"").localeCompare(String(a.updated||""))).slice(0,30);
-  S.mails=(D.mails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||m.from||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));S.mailError=null;
+  S.mails=(D.mails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||m.from||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));S.mailError=null;S.cmails=(D.cmails||[]).map(m=>({tid:m.tid||"",mid:m.mid||"",subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date||null,url:m.url||"https://mail.google.com/mail/u/0/#inbox",count:m.count||1}));
   S.yt=D.youtube||null;S.vids=D.videos||null;S.arena=D.arena||null;S.bitpanda=D.bitpanda||null;S.absent=Object.assign({},D.absences||{});
   S.habits=D.habits_heute_datum===ymd(new Date())?Object.assign({},D.habits||{}):{};
   S.briefings=D.briefings||(D.briefing?{[D.briefing.datum+"-x"]:D.briefing.text}:{});

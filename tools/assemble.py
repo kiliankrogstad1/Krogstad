@@ -19,19 +19,21 @@ def main(ordner, ziel):
     cal = lade(os.path.join(ordner, "calendar.json"), {}) or {}
     events = [e for e in cal.get("events", []) if e.get("status") != "cancelled"]
     events = [{k: e.get(k) for k in ("id", "summary", "start", "end", "location")} for e in events]
-    gm = lade(os.path.join(ordner, "gmail.json"), {}) or {}
-    mails = []
-    for t in gm.get("threads", [])[:20]:
-        ms = t.get("messages") or [{}]; m = ms[-1]
-        mails.append(dict(tid=t.get("id", ""), mid=m.get("id", ""), subject=m.get("subject", ""), sender=m.get("sender", ""),
-                          date=m.get("date"), snippet=(m.get("snippet") or "")[:200], url=t.get("viewUrl") or m.get("viewUrl"), count=t.get("messageCount") or len(ms)))
+    def threads(name):
+        out = []
+        for t in (lade(os.path.join(ordner, name), {}) or {}).get("threads", [])[:20]:
+            ms = t.get("messages") or [{}]; m = ms[-1]
+            out.append(dict(tid=t.get("id", ""), mid=m.get("id", ""), subject=m.get("subject", ""), sender=m.get("sender", ""),
+                            date=m.get("date"), snippet=(m.get("snippet") or "")[:200], url=t.get("viewUrl") or m.get("viewUrl"), count=t.get("messageCount") or len(ms)))
+        return out
+    mails = threads("gmail.json"); cmails = threads("gmail_crogstad.json")
     habits = lade(os.path.join(ordner, "habits", heute + ".json"), {}) or {}
     briefings = {}
     for f in sorted(glob.glob(os.path.join(ordner, "briefings", heute + "-*.json"))):
         b = lade(f, {}) or {}
         if b.get("text"): briefings[os.path.basename(f)[:-5]] = b["text"]
     absences = {os.path.basename(f)[:-5]: lade(f, {}) for f in glob.glob(os.path.join(ordner, "absences", "*.json"))}
-    raw = dict(stand=dt.datetime.now(dt.timezone.utc).isoformat()[:16] + "Z", events=events, mails=mails,
+    raw = dict(stand=dt.datetime.now(dt.timezone.utc).isoformat()[:16] + "Z", events=events, mails=mails, cmails=cmails,
                todos=sammlung(ordner, "todos"), goals=sammlung(ordner, "goals"), tasks=sammlung(ordner, "tasks"),
                habits={k: v for k, v in habits.items() if isinstance(v, bool)}, habits_heute_datum=heute, absences=absences, briefings=briefings,
                youtube=lade(os.path.join(ordner, "youtube", "latest.json")), videos=lade(os.path.join(ordner, "youtube", "videos.json")),
