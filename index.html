@@ -1207,7 +1207,7 @@ addEventListener("resize",()=>{if(reduce)frame(0)});
 /* ---------- Google direkt: Kalender + Gmail live in der App ----------
    Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
    Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
-const GG=(()=>{const CLIENT_ID="";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
+const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.apps.googleusercontent.com";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
   const cid=()=>CLIENT_ID||LS.get("g_client","");let tc=null,tok=null,loading=false;
   try{const s=JSON.parse(sessionStorage.getItem("kg_gt")||"null");if(s&&s.exp>Date.now()+6e4)tok=s}catch(e){}
   const ok=()=>!!(tok&&tok.exp>Date.now()+3e4);
@@ -1326,7 +1326,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="2.7";
+const APP_VER="2.8";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}

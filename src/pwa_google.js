@@ -1,7 +1,7 @@
 /* ---------- Google direkt: Kalender + Gmail live in der App ----------
    Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
    Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
-const GG=(()=>{const CLIENT_ID="";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
+const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.apps.googleusercontent.com";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
   const cid=()=>CLIENT_ID||LS.get("g_client","");let tc=null,tok=null,loading=false;
   try{const s=JSON.parse(sessionStorage.getItem("kg_gt")||"null");if(s&&s.exp>Date.now()+6e4)tok=s}catch(e){}
   const ok=()=>!!(tok&&tok.exp>Date.now()+3e4);
