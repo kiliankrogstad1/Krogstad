@@ -141,6 +141,9 @@ html,body{overscroll-behavior-y:none}
 .sp-wake{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .6s ease;position:absolute;bottom:18%}
 .splash.wait .sp-wake{opacity:1;animation:breathe 2.4s ease-in-out infinite}
 .splash.wait .sp-eye{animation:breathe 2.4s ease-in-out infinite}
+
+.sp-wake .tw-c{display:none}@media (pointer:fine){.sp-wake .tw-t{display:none}.sp-wake .tw-c{display:inline}}
+.vol.fsrow input{justify-self:start;width:20px;height:20px;accent-color:var(--cyan)}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]

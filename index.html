@@ -259,6 +259,9 @@ html,body{overscroll-behavior-y:none}
 .sp-wake{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .6s ease;position:absolute;bottom:18%}
 .splash.wait .sp-wake{opacity:1;animation:breathe 2.4s ease-in-out infinite}
 .splash.wait .sp-eye{animation:breathe 2.4s ease-in-out infinite}
+
+.sp-wake .tw-c{display:none}@media (pointer:fine){.sp-wake .tw-t{display:none}.sp-wake .tw-c{display:inline}}
+.vol.fsrow input{justify-self:start;width:20px;height:20px;accent-color:var(--cyan)}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 </style></head><body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -266,7 +269,7 @@ html,body{overscroll-behavior-y:none}
   <div class="sp-title">KROGSTAD</div>
   <div class="sp-by">erschaffen von Kilian Krogstad</div>
   <div class="sp-hello" id="spHello"></div>
-  <div class="sp-wake">Antippen, um Alfred zu wecken</div>
+  <div class="sp-wake"><span class="tw-t">Antippen</span><span class="tw-c">Klicken</span>, um Alfred zu wecken</div>
 </div>
 <div class="lock" id="lock"><form id="lockForm" autocomplete="off"><canvas class="eye" id="eyeLock" data-size="104" style="margin:0 auto 4px" aria-hidden="true"></canvas><h1>Alfred · Identifikation</h1><p id="lockTxt">Einen Moment, Sir …</p><input type="text" class="pwmask" id="lockPw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" aria-label="Passwort"><button class="jarvis-btn" type="submit" id="lockBtn"><i></i>Entsperren</button><div class="lmsg" id="lockMsg" role="status"></div></form></div>
 <div class="wrap" hidden>
@@ -1082,6 +1085,13 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
 
+/* ---------- Vollbild beim Start (installierte App am PC) ---------- */
+const KFS={want(){return LS.get("fs",true)&&matchMedia("(display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay)").matches&&matchMedia("(pointer: fine)").matches&&!!document.documentElement.requestFullscreen},
+  go(){if(KFS.want()&&!document.fullscreenElement)document.documentElement.requestFullscreen({navigationUI:"hide"}).catch(()=>{})},
+  ctl(box){if(!box)return;const r=el("label","vol fsrow");const c=el("input");c.type="checkbox";c.checked=LS.get("fs",true);c.onchange=()=>{LS.set("fs",c.checked);if(c.checked)KFS.go();else if(document.fullscreenElement)document.exitFullscreen()};
+    r.append(el("span",null,"Vollbild (PC)"),c,el("b",null,"F11"));box.appendChild(r)}};
+addEventListener("pointerdown",()=>KFS.go(),{once:true,capture:true});
+
 /* ---------- App-Start: Alfred öffnet die Augen ---------- */
 (function splash(){const sp=document.getElementById("splash");if(!sp)return;
   const rm=matchMedia("(prefers-reduced-motion: reduce)").matches;let started=false;
@@ -1096,9 +1106,9 @@ if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.rep
     setTimeout(()=>{const h=document.getElementById("spHello"),s="Willkommen, Herr Krogstad.";if(!h)return;sp.classList.add("t3");eyeHappy(1600);
       if(rm){h.textContent=s;return}let i=0;const ty=()=>{if(!h.isConnected)return;h.textContent=s.slice(0,++i);if(i<s.length)setTimeout(ty,38)};ty()},T[3]);
     setTimeout(done,T[4])};
-  sp.addEventListener("click",()=>{if(!started){KAudio.unlock();setTimeout(run,60)}else done()});
+  sp.addEventListener("click",()=>{if(!started){KFS.go();KAudio.unlock();setTimeout(run,KFS.want()?350:60)}else done()});
   /* Mit Ton: Der Browser erlaubt Klang erst nach einer Berührung → Alfred wartet geschlossen, bis Sie antippen. */
-  if(KAudio.wants()&&!KAudio.running()){KAudio.unlock();setTimeout(()=>{if(started)return;if(KAudio.running())run();else sp.classList.add("wait")},150)}else run()})();
+  if(KFS.want()){sp.classList.add("wait")}else if(KAudio.wants()&&!KAudio.running()){KAudio.unlock();setTimeout(()=>{if(started)return;if(KAudio.running())run();else sp.classList.add("wait")},150)}else run()})();
 
 /* ---------- Kopfzeile Handy: Uhr, Alfred-Auge, Menü (Vollbild) ---------- */
 (function mobileBar(){const bar=document.querySelector(".bar"),nav=document.getElementById("nav");if(!bar||!nav)return;
@@ -1113,13 +1123,13 @@ if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.rep
   const vb=el("div","volbox");const foot=el("div","mrow");const lk=el("button","btn","Sperren");lk.type="button";lk.onclick=()=>{close();window.lockApp&&window.lockApp()};foot.append(lk);
   mm.append(head,grid,vb,foot);document.body.appendChild(mm);
   const mark=()=>grid.querySelectorAll("a[href^='#']:not(.malfred)").forEach(a=>a.setAttribute("aria-current",a.getAttribute("href")===(location.hash||"#home")?"page":"false"));
-  const open=()=>{KAudio.ctl(vb);mark();mm.hidden=false;requestAnimationFrame(()=>mm.classList.add("on"));document.body.style.overflow="hidden";KAudio.fx.menu(true)};
+  const open=()=>{KAudio.ctl(vb);KFS.ctl(vb);mark();mm.hidden=false;requestAnimationFrame(()=>mm.classList.add("on"));document.body.style.overflow="hidden";KAudio.fx.menu(true)};
   const close=()=>{if(mm.hidden)return;mm.classList.remove("on");document.body.style.overflow="";setTimeout(()=>{mm.hidden=true},260);KAudio.fx.menu(false)};
   bb.onclick=open;xb.onclick=close;grid.addEventListener("click",e=>{const a=e.target.closest("a");if(!a)return;if(a===alf){e.preventDefault();close();const j=document.getElementById("jvOpen");j&&j.click();return}close()});
   addEventListener("keydown",e=>{if(e.key==="Escape")close()});addEventListener("hashchange",mark);
   ab.onclick=()=>{const j=document.getElementById("jvOpen");j&&j.click()};
   const W=["So","Mo","Di","Mi","Do","Fr","Sa"];const tick=()=>{const n=new Date();mc.textContent="";mc.append(el("small",null,W[n.getDay()]+" "+String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."),el("b",null,String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")))};tick();setInterval(tick,15000)})();
-KAudio.ctl(document.getElementById("volSec"));
+KAudio.ctl(document.getElementById("volSec"));KFS.ctl(document.getElementById("volSec"));
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
