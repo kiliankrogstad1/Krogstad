@@ -144,6 +144,7 @@ html,body{overscroll-behavior-y:none}
 
 .sp-wake .tw-c{display:none}@media (pointer:fine){.sp-wake .tw-t{display:none}.sp-wake .tw-c{display:inline}}
 .vol.fsrow input{justify-self:start;width:20px;height:20px;accent-color:var(--cyan)}
+.appver{text-align:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim,var(--muted));opacity:.7}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]

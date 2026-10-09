@@ -262,6 +262,7 @@ html,body{overscroll-behavior-y:none}
 
 .sp-wake .tw-c{display:none}@media (pointer:fine){.sp-wake .tw-t{display:none}.sp-wake .tw-c{display:inline}}
 .vol.fsrow input{justify-self:start;width:20px;height:20px;accent-color:var(--cyan)}
+.appver{text-align:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim,var(--muted));opacity:.7}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
 </style></head><body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -1082,6 +1083,8 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
+const APP_VER="2.4";
+(function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
 
