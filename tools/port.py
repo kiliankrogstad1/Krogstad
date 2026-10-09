@@ -58,6 +58,12 @@ js = rep(js, ':"Verzeihung, Sir, das hat nicht geklappt."}', ':err&&err.code==="
 for bad in ("claude.use(\"mcp\")", "MYMAIL", "OFF_TPL", "krogChangePw"):
     assert bad not in js or bad == 'claude.use("mcp")', bad
 js = rep(js, '["finanzen","Finanzen","offen","--violet"]', '["finanzen","Finanzen",S.bitpanda?Math.round(S.bitpanda.total_chf)+" CHF":"–","--violet"]')
+js = rep(js, 'const open=el("a","btn","In Gmail öffnen");open.href=m.url;open.target="_blank";open.rel="noopener";', 'const open=el("a","btn","In Gmail öffnen");open.href=gmailHref(m);open.target="_blank";open.rel="noopener";')
+js += """
+/* Mails auf Android direkt in der Gmail-App öffnen */
+function gmailHref(m){const isAndroid=/Android/i.test(navigator.userAgent);const web="https://mail.google.com/mail/u/0/#inbox/"+(m.tid||"");
+  return isAndroid?"intent://mail.google.com/mail/u/0/#Intent;scheme=https;package=com.google.android.gm;S.browser_fallback_url="+encodeURIComponent(web)+";end":(m.url||web)}
+"""
 js += "\n" + (R / "src" / "pwa_google.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")

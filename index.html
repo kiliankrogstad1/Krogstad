@@ -841,7 +841,7 @@ function renderMailBox(bid,mid,list,emptyTxt){const box=document.getElementById(
   for(const m of list){const it=el("div","item mail");it.style.setProperty("--c","var(--cyan)");const b=el("div","b");
     const d=m.date?new Date(m.date):null;b.appendChild(el("b",null,m.sender.replace(/<.*>/,"").trim()+(d?" · "+d.getDate()+"."+(d.getMonth()+1)+". "+hm(d):"")));
     b.appendChild(el("div","subj",m.subject));b.appendChild(el("div",null,m.snippet.replace(/[͏\s]+/g," ").slice(0,160)));
-    const row=el("div","row-btns");const open=el("a","btn","In Gmail öffnen");open.href=m.url;open.target="_blank";open.rel="noopener";
+    const row=el("div","row-btns");const open=el("a","btn","In Gmail öffnen");open.href=gmailHref(m);open.target="_blank";open.rel="noopener";
     const draftBtn=el("button","btn","Alfred: Antwort-Entwurf");draftBtn.type="button";const out=el("div","draft");out.hidden=true;
     draftBtn.onclick=()=>makeDraft(m,out,draftBtn);row.append(open,draftBtn);b.append(row,out);it.appendChild(b);box.appendChild(it)}}
 async function makeDraft(m,out,btn){const smp=await getSample();out.hidden=false;out.textContent="";
@@ -1204,6 +1204,10 @@ route();renderAll();startLoop();setInterval(()=>{renderAll();const si=slotInfo(n
 addEventListener("resize",()=>{if(reduce)frame(0)});
 
 
+/* Mails auf Android direkt in der Gmail-App öffnen */
+function gmailHref(m){const isAndroid=/Android/i.test(navigator.userAgent);const web="https://mail.google.com/mail/u/0/#inbox/"+(m.tid||"");
+  return isAndroid?"intent://mail.google.com/mail/u/0/#Intent;scheme=https;package=com.google.android.gm;S.browser_fallback_url="+encodeURIComponent(web)+";end":(m.url||web)}
+
 /* ---------- Google direkt: Kalender + Gmail live in der App ----------
    Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
    Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
@@ -1326,7 +1330,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="2.8";
+const APP_VER="2.9";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}
