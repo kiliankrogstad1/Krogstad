@@ -34,9 +34,9 @@ function standTxt(){return BUNDLE?"Stand "+relativ(BUNDLE.stand)+(navigator.onLi
   const tick=()=>{clearTimeout(tmr);const st=LS.get("lockst",{f:0,u:0}),r=Math.ceil((st.u-Date.now())/1000);if(r>0){msg.textContent="Bitte "+(r>=60?Math.ceil(r/60)+" min":r+" s")+" warten.";btn.disabled=true;tmr=setTimeout(tick,1000)}else{btn.disabled=false;if(/warten/.test(msg.textContent))msg.textContent=""}};
   const remember=()=>{try{sessionStorage.setItem("kg_s",JSON.stringify({p:PW,t:Date.now()}))}catch(e){}};
   const open=(data,p)=>{PW=p;BUNDLE=data;lk.hidden=true;wrap.hidden=false;pw.value="";msg.textContent="";last=Date.now();remember();loadBundle(data);if(!opened){opened=true;__unl()}route()};
-  txt.textContent=greet();tick();setTimeout(()=>pw.focus(),80);
+  txt.textContent=greet();tick();setTimeout(()=>{if(!document.getElementById("splash"))pw.focus()},80);
   /* Neuladen (z. B. Wischen) innerhalb der Sitzung: nicht erneut fragen. Sitzung endet beim Schliessen der App. */
-  try{const s=JSON.parse(sessionStorage.getItem("kg_s")||"null");if(s&&s.p&&Date.now()-s.t<15*60e3){txt.textContent="Einen Moment, Sir …";eyeBusy(true);
+  try{const s=JSON.parse(sessionStorage.getItem("kg_s")||"null");if(s&&s.p&&Date.now()-s.t<15*60e3){window.__skipSplash=1;txt.textContent="Einen Moment, Sir …";eyeBusy(true);
     unlockData(s.p).then(d=>{eyeBusy(false);open(d,s.p)}).catch(()=>{eyeBusy(false);txt.textContent=greet();try{sessionStorage.removeItem("kg_s")}catch(e){}})}}catch(e){}
   f.onsubmit=async e=>{e.preventDefault();if(btn.disabled||!pw.value)return;msg.textContent="";const st=LS.get("lockst",{f:0,u:0});btn.disabled=true;eyeBusy(true);
     try{const d=await unlockData(pw.value);LS.set("lockst",{f:0,u:0});eyeBusy(false);eyeAnger(0);eyeHappy(1500);const p=pw.value;setTimeout(()=>{btn.disabled=false;open(d,p)},600)}

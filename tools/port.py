@@ -36,6 +36,7 @@ body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div cl
 body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wird nie automatisch, nur gespeichert als Entwurf in Gmail.',
            'Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.')
 body = rep(body, '<p class="note">Routine aus deiner Wochenvorlage', '<p class="note">App · Daten verschlüsselt, Abgleich 3× täglich · Routine aus deiner Wochenvorlage')
+body = (R / "src" / "pwa_ui.html").read_text(encoding="utf-8") + body
 body = rep(body, '<form id="jvForm">', '<div class="act" id="jvKey" hidden></div><form id="jvForm">')
 
 # ---------- Script ----------
@@ -56,6 +57,7 @@ js = rep(js, ':"Verzeihung, Sir, das hat nicht geklappt."}', ':err&&err.code==="
 for bad in ("claude.use(\"mcp\")", "MYMAIL", "OFF_TPL", "krogChangePw"):
     assert bad not in js or bad == 'claude.use("mcp")', bad
 js = rep(js, '["finanzen","Finanzen","offen","--violet"]', '["finanzen","Finanzen",S.bitpanda?Math.round(S.bitpanda.total_chf)+" CHF":"–","--violet"]')
+js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
 js += '\nif("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});\n'
 
 extra = """<style>
@@ -75,6 +77,50 @@ html,body{overscroll-behavior-y:none}
  .ar-tab{font-size:12.5px}.ar-tab td,.ar-tab th{padding:7px 5px}
  .ar-tab td b{white-space:nowrap}
  .ar-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+/* Scrollbalken im Krogstad-Stil */
+*{scrollbar-width:thin;scrollbar-color:rgba(95,225,214,.45) transparent}
+::-webkit-scrollbar{width:6px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(95,225,214,.55),rgba(70,175,255,.35));border-radius:6px;box-shadow:0 0 6px rgba(95,225,214,.5)}
+::-webkit-scrollbar-thumb:hover{background:var(--cyan)}
+::-webkit-scrollbar-corner{background:transparent}
+.nav,.daynav,.vfilter{scrollbar-width:none}.nav::-webkit-scrollbar,.daynav::-webkit-scrollbar,.vfilter::-webkit-scrollbar{display:none}
+.ar-wrap{scrollbar-width:thin}
+/* Start-Animation */
+.splash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(ellipse at center,rgba(95,225,214,.07),transparent 55%),var(--bg,#02070b);transition:opacity .6s ease,filter .6s ease;cursor:pointer}
+.splash.out{opacity:0;filter:blur(6px);pointer-events:none}
+.sp-eye{position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;filter:drop-shadow(0 0 0 transparent);transition:filter 1.2s ease}
+.splash.open .sp-eye{filter:drop-shadow(0 0 22px rgba(95,225,214,.45))}
+.sp-eye .lid{position:absolute;left:-10%;width:120%;height:52%;background:var(--bg,#02070b);transition:transform 1s cubic-bezier(.65,0,.25,1)}
+.sp-eye .lid.top{top:0;border-radius:0 0 50% 50%/0 0 38% 38%;transform-origin:top;box-shadow:0 2px 0 rgba(95,225,214,.6)}
+.sp-eye .lid.bot{bottom:0;border-radius:50% 50% 0 0/38% 38% 0 0;transform-origin:bottom;box-shadow:0 -2px 0 rgba(95,225,214,.6)}
+.splash.open .lid.top{transform:translateY(-100%)}.splash.open .lid.bot{transform:translateY(100%)}
+.sp-title{font-family:var(--font-display);font-size:30px;letter-spacing:.42em;color:var(--fg);margin-left:.42em;opacity:0;transform:translateY(8px);transition:all .8s ease;text-shadow:0 0 18px rgba(95,225,214,.35)}
+.sp-by{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .8s ease}
+.sp-hello{min-height:1.4em;font-family:var(--font-mono);font-size:14px;letter-spacing:.08em;color:var(--cyan);margin-top:14px}
+.splash.t1 .sp-title{opacity:1;transform:none;letter-spacing:.3em;margin-left:.3em}.splash.t2 .sp-by{opacity:1}
+/* Kopfzeile Handy */
+.mright,.mmenu{display:none}
+@media (max-width:820px){
+ .bar{flex-wrap:nowrap;justify-content:space-between;padding-block:10px}
+ .bar .nav,.bar .clock,#jvOpen,#lockNow{display:none!important}
+ .logo{font-size:0;gap:8px}.logo b{font-size:15px}
+ .mright{display:flex;align-items:center;gap:10px}
+ .mclock{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;font-family:var(--font-mono)}
+ .mclock small{white-space:nowrap;font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+ .mclock b{font-family:var(--font-display);font-size:19px;color:var(--cyan);text-shadow:0 0 10px rgba(95,225,214,.45);font-weight:600}
+ .mbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(95,225,214,.06);display:grid;place-items:center;padding:0;cursor:pointer}
+ .burger{display:flex;flex-direction:column;justify-content:center;gap:4px}
+ .burger i{display:block;width:16px;height:1.5px;background:var(--cyan);transition:transform .25s ease,opacity .2s}
+ .burger.x i:nth-child(1){transform:translateY(5.5px) rotate(45deg)}.burger.x i:nth-child(2){opacity:0}.burger.x i:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+ .mmenu{display:block;position:sticky;top:60px;z-index:6;max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .25s ease;background:rgba(2,7,11,.97);border-bottom:1px solid transparent}
+ .mmenu.on{max-height:520px;opacity:1;border-bottom-color:var(--line-hi);box-shadow:0 18px 40px rgba(0,0,0,.7)}
+ .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0}
+ .mgrid a{display:flex;align-items:baseline;gap:10px;padding:12px;border:1px solid var(--line);color:var(--fg);text-decoration:none;font-family:var(--font-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;background:rgba(95,225,214,.03)}
+ .mgrid a small{color:var(--dim,var(--muted));font-size:10px}
+ .mgrid a[aria-current=page]{border-color:var(--cyan);color:var(--cyan);box-shadow:inset 2px 0 0 var(--cyan)}
+ .mrow{display:flex;justify-content:flex-end;padding:0 0 12px}
 }
 </style>"""
 fonts = src[src.index('<link rel="preconnect"'):src.index("<style>")]

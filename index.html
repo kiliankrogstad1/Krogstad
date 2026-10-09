@@ -198,7 +198,57 @@ html,body{overscroll-behavior-y:none}
  .ar-tab td b{white-space:nowrap}
  .ar-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
+/* Scrollbalken im Krogstad-Stil */
+*{scrollbar-width:thin;scrollbar-color:rgba(95,225,214,.45) transparent}
+::-webkit-scrollbar{width:6px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(95,225,214,.55),rgba(70,175,255,.35));border-radius:6px;box-shadow:0 0 6px rgba(95,225,214,.5)}
+::-webkit-scrollbar-thumb:hover{background:var(--cyan)}
+::-webkit-scrollbar-corner{background:transparent}
+.nav,.daynav,.vfilter{scrollbar-width:none}.nav::-webkit-scrollbar,.daynav::-webkit-scrollbar,.vfilter::-webkit-scrollbar{display:none}
+.ar-wrap{scrollbar-width:thin}
+/* Start-Animation */
+.splash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(ellipse at center,rgba(95,225,214,.07),transparent 55%),var(--bg,#02070b);transition:opacity .6s ease,filter .6s ease;cursor:pointer}
+.splash.out{opacity:0;filter:blur(6px);pointer-events:none}
+.sp-eye{position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;filter:drop-shadow(0 0 0 transparent);transition:filter 1.2s ease}
+.splash.open .sp-eye{filter:drop-shadow(0 0 22px rgba(95,225,214,.45))}
+.sp-eye .lid{position:absolute;left:-10%;width:120%;height:52%;background:var(--bg,#02070b);transition:transform 1s cubic-bezier(.65,0,.25,1)}
+.sp-eye .lid.top{top:0;border-radius:0 0 50% 50%/0 0 38% 38%;transform-origin:top;box-shadow:0 2px 0 rgba(95,225,214,.6)}
+.sp-eye .lid.bot{bottom:0;border-radius:50% 50% 0 0/38% 38% 0 0;transform-origin:bottom;box-shadow:0 -2px 0 rgba(95,225,214,.6)}
+.splash.open .lid.top{transform:translateY(-100%)}.splash.open .lid.bot{transform:translateY(100%)}
+.sp-title{font-family:var(--font-display);font-size:30px;letter-spacing:.42em;color:var(--fg);margin-left:.42em;opacity:0;transform:translateY(8px);transition:all .8s ease;text-shadow:0 0 18px rgba(95,225,214,.35)}
+.sp-by{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .8s ease}
+.sp-hello{min-height:1.4em;font-family:var(--font-mono);font-size:14px;letter-spacing:.08em;color:var(--cyan);margin-top:14px}
+.splash.t1 .sp-title{opacity:1;transform:none;letter-spacing:.3em;margin-left:.3em}.splash.t2 .sp-by{opacity:1}
+/* Kopfzeile Handy */
+.mright,.mmenu{display:none}
+@media (max-width:820px){
+ .bar{flex-wrap:nowrap;justify-content:space-between;padding-block:10px}
+ .bar .nav,.bar .clock,#jvOpen,#lockNow{display:none!important}
+ .logo{font-size:0;gap:8px}.logo b{font-size:15px}
+ .mright{display:flex;align-items:center;gap:10px}
+ .mclock{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;font-family:var(--font-mono)}
+ .mclock small{white-space:nowrap;font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+ .mclock b{font-family:var(--font-display);font-size:19px;color:var(--cyan);text-shadow:0 0 10px rgba(95,225,214,.45);font-weight:600}
+ .mbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-hi);background:rgba(95,225,214,.06);display:grid;place-items:center;padding:0;cursor:pointer}
+ .burger{display:flex;flex-direction:column;justify-content:center;gap:4px}
+ .burger i{display:block;width:16px;height:1.5px;background:var(--cyan);transition:transform .25s ease,opacity .2s}
+ .burger.x i:nth-child(1){transform:translateY(5.5px) rotate(45deg)}.burger.x i:nth-child(2){opacity:0}.burger.x i:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+ .mmenu{display:block;position:sticky;top:60px;z-index:6;max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .25s ease;background:rgba(2,7,11,.97);border-bottom:1px solid transparent}
+ .mmenu.on{max-height:520px;opacity:1;border-bottom-color:var(--line-hi);box-shadow:0 18px 40px rgba(0,0,0,.7)}
+ .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0}
+ .mgrid a{display:flex;align-items:baseline;gap:10px;padding:12px;border:1px solid var(--line);color:var(--fg);text-decoration:none;font-family:var(--font-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;background:rgba(95,225,214,.03)}
+ .mgrid a small{color:var(--dim,var(--muted));font-size:10px}
+ .mgrid a[aria-current=page]{border-color:var(--cyan);color:var(--cyan);box-shadow:inset 2px 0 0 var(--cyan)}
+ .mrow{display:flex;justify-content:flex-end;padding:0 0 12px}
+}
 </style></head><body>
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="sp-eye"><canvas class="eye" data-size="132"></canvas><i class="lid top"></i><i class="lid bot"></i></div>
+  <div class="sp-title">KROGSTAD</div>
+  <div class="sp-by">erschaffen von Kilian Krogstad</div>
+  <div class="sp-hello" id="spHello"></div>
+</div>
 <div class="lock" id="lock"><form id="lockForm" autocomplete="off"><canvas class="eye" id="eyeLock" data-size="104" style="margin:0 auto 4px" aria-hidden="true"></canvas><h1>Alfred · Identifikation</h1><p id="lockTxt">Einen Moment, Sir …</p><input type="text" class="pwmask" id="lockPw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" aria-label="Passwort"><button class="jarvis-btn" type="submit" id="lockBtn"><i></i>Entsperren</button><div class="lmsg" id="lockMsg" role="status"></div></form></div>
 <div class="wrap" hidden>
   <div class="bar">
@@ -407,9 +457,9 @@ function standTxt(){return BUNDLE?"Stand "+relativ(BUNDLE.stand)+(navigator.onLi
   const tick=()=>{clearTimeout(tmr);const st=LS.get("lockst",{f:0,u:0}),r=Math.ceil((st.u-Date.now())/1000);if(r>0){msg.textContent="Bitte "+(r>=60?Math.ceil(r/60)+" min":r+" s")+" warten.";btn.disabled=true;tmr=setTimeout(tick,1000)}else{btn.disabled=false;if(/warten/.test(msg.textContent))msg.textContent=""}};
   const remember=()=>{try{sessionStorage.setItem("kg_s",JSON.stringify({p:PW,t:Date.now()}))}catch(e){}};
   const open=(data,p)=>{PW=p;BUNDLE=data;lk.hidden=true;wrap.hidden=false;pw.value="";msg.textContent="";last=Date.now();remember();loadBundle(data);if(!opened){opened=true;__unl()}route()};
-  txt.textContent=greet();tick();setTimeout(()=>pw.focus(),80);
+  txt.textContent=greet();tick();setTimeout(()=>{if(!document.getElementById("splash"))pw.focus()},80);
   /* Neuladen (z. B. Wischen) innerhalb der Sitzung: nicht erneut fragen. Sitzung endet beim Schliessen der App. */
-  try{const s=JSON.parse(sessionStorage.getItem("kg_s")||"null");if(s&&s.p&&Date.now()-s.t<15*60e3){txt.textContent="Einen Moment, Sir …";eyeBusy(true);
+  try{const s=JSON.parse(sessionStorage.getItem("kg_s")||"null");if(s&&s.p&&Date.now()-s.t<15*60e3){window.__skipSplash=1;txt.textContent="Einen Moment, Sir …";eyeBusy(true);
     unlockData(s.p).then(d=>{eyeBusy(false);open(d,s.p)}).catch(()=>{eyeBusy(false);txt.textContent=greet();try{sessionStorage.removeItem("kg_s")}catch(e){}})}}catch(e){}
   f.onsubmit=async e=>{e.preventDefault();if(btn.disabled||!pw.value)return;msg.textContent="";const st=LS.get("lockst",{f:0,u:0});btn.disabled=true;eyeBusy(true);
     try{const d=await unlockData(pw.value);LS.set("lockst",{f:0,u:0});eyeBusy(false);eyeAnger(0);eyeHappy(1500);const p=pw.value;setTimeout(()=>{btn.disabled=false;open(d,p)},600)}
@@ -908,6 +958,35 @@ document.getElementById("jvForm").onsubmit=async e=>{e.preventDefault();const in
 route();renderAll();startLoop();setInterval(()=>{renderAll();const si=slotInfo(new Date());if(S.dataReady&&S.lastSlot&&S.lastSlot!==si.key)runBriefing(false);S.lastSlot=si.key},60000);
 addEventListener("resize",()=>{if(reduce)frame(0)});
 
+
+/* ---------- App-Start: Alfred öffnet die Augen ---------- */
+(function splash(){const sp=document.getElementById("splash");if(!sp)return;
+  const rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const done=()=>{if(!sp.isConnected)return;sp.classList.add("out");setTimeout(()=>{sp.remove();const p=document.getElementById("lockPw");const lk=document.getElementById("lock");if(p&&lk&&!lk.hidden)p.focus()},650)};
+  if(window.__skipSplash||sessionStorage.getItem("kg_splash")){sp.remove();return}
+  try{sessionStorage.setItem("kg_splash","1")}catch(e){}
+  sp.addEventListener("click",done);
+  const T=rm?[0,100,200,300,1400]:[350,1450,2050,2650,4300];
+  setTimeout(()=>sp.classList.add("open"),T[0]);
+  setTimeout(()=>sp.classList.add("t1"),T[1]);
+  setTimeout(()=>sp.classList.add("t2"),T[2]);
+  setTimeout(()=>{const h=document.getElementById("spHello"),s="Willkommen, Herr Krogstad.";sp.classList.add("t3");if(typeof eyeHappy==="function")eyeHappy(1600);
+    if(rm){h.textContent=s;return}let i=0;const ty=()=>{h.textContent=s.slice(0,++i);if(i<s.length)setTimeout(ty,38)};ty()},T[3]);
+  setTimeout(done,T[4])})();
+
+/* ---------- Kopfzeile Handy: Uhr, Alfred-Auge, Menü ---------- */
+(function mobileBar(){const bar=document.querySelector(".bar"),nav=document.getElementById("nav");if(!bar||!nav)return;
+  const mc=el("span","mclock");mc.id="mclock";const ab=el("button","mbtn");ab.type="button";ab.setAttribute("aria-label","Alfred starten");const ae=el("canvas","eye");ae.dataset.size="24";ab.appendChild(ae);
+  const bb=el("button","mbtn burger");bb.type="button";bb.setAttribute("aria-label","Menü");bb.setAttribute("aria-expanded","false");bb.append(el("i"),el("i"),el("i"));
+  const right=el("div","mright");right.append(mc,ab,bb);bar.insertBefore(right,bar.children[1]||null);
+  const mm=el("div","mmenu");mm.id="mmenu";const grid=el("div","mgrid");
+  nav.querySelectorAll("a").forEach((a,i)=>{const b=el("a",null);b.href=a.getAttribute("href");b.append(el("small",null,String(i+1).padStart(2,"0")),el("span",null,a.textContent));grid.appendChild(b)});
+  const row=el("div","mrow");const lk=el("button","btn","Sperren");lk.type="button";lk.onclick=()=>{close();window.lockApp&&window.lockApp()};row.append(lk);mm.append(grid,row);bar.after(mm);
+  const open=()=>{mm.classList.add("on");bb.setAttribute("aria-expanded","true");bb.classList.add("x");mark()},close=()=>{mm.classList.remove("on");bb.setAttribute("aria-expanded","false");bb.classList.remove("x")};
+  const mark=()=>grid.querySelectorAll("a").forEach(a=>a.setAttribute("aria-current",a.getAttribute("href")===(location.hash||"#home")?"page":"false"));
+  bb.onclick=()=>mm.classList.contains("on")?close():open();grid.addEventListener("click",e=>{if(e.target.closest("a"))close()});addEventListener("hashchange",()=>{close();mark()});
+  ab.onclick=()=>{close();const j=document.getElementById("jvOpen");j&&j.click()};
+  const W=["So","Mo","Di","Mi","Do","Fr","Sa"];const tick=()=>{const n=new Date();mc.textContent="";mc.append(el("small",null,W[n.getDay()]+" "+String(n.getDate()).padStart(2,"0")+"."+String(n.getMonth()+1).padStart(2,"0")+"."),el("b",null,String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")))};tick();setInterval(tick,15000)})();
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
