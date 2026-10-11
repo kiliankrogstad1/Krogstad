@@ -30,7 +30,7 @@ body = cut(body, '<div class="lock"', '<div class="wrap"',
 body = rep(body, '  </div>\n\n  <!-- HOME -->', '  </div>\n  <p class="note" id="stand" style="margin:0 0 8px">–</p>\n\n  <!-- HOME -->')
 i = body.index('<section class="panel" aria-labelledby="h13">'); j = body.index("</section>", i) + 10
 body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit, Klang & Alfred</h2><div class="meta">dieses Gerät</div></div>\n'
-                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>\n'
+                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n      <div class="act" style="border-left-color:var(--violet)" id="pwBox"></div>\n      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>\n'
                    '      <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>\n'
                    '      <div class="volbox" id="volSec"></div>\n      <p class="note" id="pendBox"></p>\n    </section>') + body[j:]
 body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wird nie automatisch, nur gespeichert als Entwurf in Gmail.',
@@ -71,6 +71,14 @@ js += """
   t.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event("submit",{cancelable:true}))}});
   t.addEventListener("input",()=>{t.style.height="auto";t.style.height=Math.min(120,t.scrollHeight)+"px"})})();
 """
+# Passwort ändern über Alfred (Formular auf dem Gerät, Passwörter gehen nie an die API)
+js = rep(js, 'cards.push(e));return{gefunden:l.map(evInfo)}}}];',
+         'cards.push(e));return{gefunden:l.map(evInfo)}}},'
+         '{name:"change_password",description:"Zeigt Kilian ein sicheres Formular, mit dem er sein App-Passwort selbst ändert. Du siehst und bekommst keine Passwörter.",inputSchema:{type:"object",properties:{}},execute:async()=>{cards.push({el:pwCard()});return{formular_angezeigt:true}}}];')
+js = rep(js, 'Andere Änderungen (To-dos usw.) soll er Claude im Chat schreiben.',
+         'Will Kilian sein App-Passwort ändern, rufe change_password auf. Frag NIE nach Passwörtern und bitte ihn, sie nie in den Chat zu schreiben – er tippt sie nur ins Formular. Andere Änderungen (To-dos usw.) soll er Claude im Chat schreiben.')
+js = rep(js, 'q=inp.value.trim();{const kr=',
+         'q=inp.value.trim();if(/passw/i.test(q)&&/(änder|aender|wechsel|neu|setz|vergessen)/i.test(q)){inp.value="";log.appendChild(el("div","msg me",q));const a=el("div","msg ai","Selbstverständlich, Sir. Bitte hier eingeben – Ihre Passwörter sehe ich nicht.");a.appendChild(pwCard());log.appendChild(a);log.scrollTop=log.scrollHeight;return}{const kr=')
 js += "\n" + (R / "src" / "pwa_google.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
