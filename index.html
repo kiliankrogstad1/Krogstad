@@ -428,7 +428,7 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
     <section class="panel" aria-labelledby="h10">
       <div class="ph"><h2 id="h10"><span>04</span> // Gmail · zu beantworten</h2><div class="meta" id="mailMeta">lädt</div></div>
       <div id="mails"></div>
-      <p class="note">Ungelesene Mails im Posteingang (ohne Werbung, Social, Updates) der letzten 30 Tage. Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.</p>
+      <p class="note">Ungelesene Mails im Posteingang (ohne Werbung, Social, Updates) der letzten 30 Tage. Live über Google (alle 10 min). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.</p>
     </section>
     <section class="panel" aria-labelledby="h11">
       <div class="ph"><h2 id="h11"><span>05</span> // Crogstad · contact@crogstad.com</h2><div class="meta" id="cmailMeta">lädt</div></div>
@@ -457,6 +457,7 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
       <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>
       <div class="act" style="border-left-color:var(--violet)" id="pwBox"></div>
       <div class="act" style="border-left-color:var(--green)" id="gBox"></div>
+      <div class="act" style="border-left-color:var(--blue)" id="liveBox"></div>
       <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>
       <div class="volbox" id="volSec"></div>
       <p class="note" id="pendBox"></p>
@@ -489,7 +490,7 @@ html{overscroll-behavior-y:none;overflow-x:clip}body{overscroll-behavior-y:none}
       <div id="bitpanda"></div>
     </div>
   </section>
-  <p class="note">App · Daten verschlüsselt, Abgleich 3× täglich · Routine aus deiner Wochenvorlage · Termine live aus Google Kalender · Mails live aus Gmail · YouTube-Zahlen aktualisiert Claude</p>
+  <p class="note">App · Daten verschlüsselt · Kalender, Mails, YouTube und Bot-Arena live · Routine aus deiner Wochenvorlage · Termine live aus Google Kalender · Mails live aus Gmail · YouTube-Zahlen aktualisiert Claude</p>
 </div>
 
 <section class="panel jv" id="jv" hidden aria-labelledby="jvh">
@@ -627,7 +628,7 @@ function loadBundle(D){S.events=(D.events||[]).filter(x=>x.status!=="cancelled")
   S.briefings=D.briefings||(D.briefing?{[D.briefing.datum+"-x"]:D.briefing.text}:{});
   applyLocal();S.db=LDB;S.dataReady=true;
   renderAll();renderVids();renderBitpanda();renderArena();renderMails();renderPending();keyBox(document.getElementById("keyBox"));pwBox(document.getElementById("pwBox"));
-  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false);if(typeof GG!=="undefined"){GG.status();GG.box(document.getElementById("gBox"));if(GG.ok())GG.refresh(true)}}
+  const st=document.getElementById("stand");if(st)st.textContent="Daten "+standTxt().replace("Stand ","");runBriefing(false);if(typeof GG!=="undefined"){GG.status();GG.box(document.getElementById("gBox"));if(GG.ok())GG.refresh(true)}if(typeof LIVE!=="undefined"){LIVE.box(document.getElementById("liveBox"));LIVE.refresh()}}
 
 /* ---------- Alfred über den eigenen Anthropic-Schlüssel ---------- */
 const getSample=async()=>{const key=await openLocal("anthropic");if(!key)return null;
@@ -1280,7 +1281,7 @@ function gmailHref(m){const isAndroid=/Android/i.test(navigator.userAgent);const
 /* ---------- Google direkt: Kalender + Gmail live in der App ----------
    Anmeldung über Google (nur Kilians Konto, Zugriffsschlüssel 1 h gültig, nur im Speicher dieser Sitzung).
    Stellt dieselben Werkzeuge bereit wie Krogstad-Online (S.mcp), damit Alfred eintragen/absagen/Entwürfe kann. */
-const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.apps.googleusercontent.com";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose";
+const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.apps.googleusercontent.com";const SCOPES="https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/youtube.readonly";
   const cid=()=>CLIENT_ID||LS.get("g_client","");let tc=null,tok=null,loading=false;
   try{const s=JSON.parse(sessionStorage.getItem("kg_gt")||"null");if(s&&s.exp>Date.now()+6e4)tok=s}catch(e){}
   const ok=()=>!!(tok&&tok.exp>Date.now()+3e4);
@@ -1288,8 +1289,8 @@ const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.ap
     if(r.status===401){tok=null;sessionStorage.removeItem("kg_gt");status();throw{code:"needs_reauth",message:"Google neu verbinden"}}if(r.status===204)return{};const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:"tool_error",message:(j.error&&j.error.message)||String(r.status)};return j};
   function loadGis(){return new Promise((res,rej)=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res();const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=()=>res();s.onerror=()=>rej(new Error("Google nicht erreichbar"));document.head.appendChild(s)})}
   async function connect(){if(!cid()){status("Client-ID fehlt (unter Ziele → Sicherheit eintragen).");return}try{await loadGis()}catch(e){status("Google nicht erreichbar (offline?)");return}
-    if(!tc)tc=google.accounts.oauth2.initTokenClient({client_id:cid(),scope:SCOPES,prompt:"",callback:r=>{if(r&&r.access_token){tok={t:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000};try{sessionStorage.setItem("kg_gt",JSON.stringify(tok))}catch(e){}LS.set("g_ok",1);refresh(true)}else status("Anmeldung abgebrochen.")},error_callback:e=>status("Anmeldung abgebrochen.")});
-    tc.requestAccessToken({prompt:LS.get("g_ok",0)?"":"consent"})}
+    if(!tc)tc=google.accounts.oauth2.initTokenClient({client_id:cid(),scope:SCOPES,prompt:"",callback:r=>{if(r&&r.access_token){tok={t:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000};try{sessionStorage.setItem("kg_gt",JSON.stringify(tok))}catch(e){}LS.set("g_ok",2);refresh(true)}else status("Anmeldung abgebrochen.")},error_callback:e=>status("Anmeldung abgebrochen.")});
+    tc.requestAccessToken({prompt:LS.get("g_ok",0)>=2?"":"consent"})}
   const iso=d=>d.toISOString();
   async function events(){const s=addDays(sod(new Date()),-7),e=addDays(sod(new Date()),40);
     const j=await api("https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin="+encodeURIComponent(iso(s))+"&timeMax="+encodeURIComponent(iso(e)));
@@ -1317,21 +1318,78 @@ const GG=(()=>{const CLIENT_ID="405380324281-8ihu0l7o41dgpb46ekms3v79rbcf7qo3.ap
   async function refresh(force){if(!ok()||loading)return;loading=true;status("Google · lädt …");
     try{S.mcp=shim;S.events=await events();S.calLoaded=true;S.calError=null;S.mails=null;await loadMails(true);
       try{S.cmails=(await threads("(to:contact@crogstad.com OR deliveredto:contact@crogstad.com) -in:sent -from:me is:unread newer_than:30d",15)).threads.map(t=>{const m=t.messages[t.messages.length-1]||{};return{tid:t.id,mid:m.id,subject:m.subject||"(ohne Betreff)",sender:m.sender||"",snippet:m.snippet||"",date:m.date,url:t.viewUrl,count:t.messageCount}})}catch(e){}
-      LS.set("g_last",Date.now());renderAll();renderMails();status()}catch(e){const m=String(e.message||e);status(e.code==="needs_reauth"?null:/has not been used|is disabled|accessNotConfigured/i.test(m)?(/gmail/i.test(m)?"Gmail-API":"Kalender-API")+" in Google Cloud noch nicht aktiviert":"Google: "+m.slice(0,60))}finally{loading=false}}
+      LS.set("g_last",Date.now());renderAll();renderMails();status();if(typeof LIVE!=="undefined")LIVE.refresh()}catch(e){const m=String(e.message||e);status(e.code==="needs_reauth"?null:/has not been used|is disabled|accessNotConfigured/i.test(m)?(/gmail/i.test(m)?"Gmail-API":"Kalender-API")+" in Google Cloud noch nicht aktiviert":"Google: "+m.slice(0,60))}finally{loading=false}}
   /* Anzeige oben: live oder verbinden */
   function status(msg){const st=document.getElementById("stand");if(!st)return;st.textContent="";
     const base=el("span",null,"Daten "+standTxt().replace("Stand ",""));st.appendChild(base);
     if(ok()&&!msg){st.appendChild(el("span","gl"," · Google live ✓"));return}
     if(msg){st.appendChild(el("span","gl"," · "+msg));if(/lädt/.test(msg))return}
     if(!cid()&&!msg)return;const b=el("button","btn gbtn",LS.get("g_ok",0)?"Google aktualisieren":"Mit Google verbinden");b.type="button";b.onclick=()=>connect();st.appendChild(b)}
-  function box(bx){if(!bx)return;bx.textContent="";bx.appendChild(el("div","ast","Google direkt (Kalender + Gmail live): "+(ok()?"verbunden ✓":cid()?"bereit – oben „Mit Google verbinden“":"Client-ID fehlt")));
+  function box(bx){if(!bx)return;bx.textContent="";bx.appendChild(el("div","ast","Google direkt (Kalender, Gmail + YouTube live): "+(ok()?"verbunden ✓":cid()?"bereit – oben „Mit Google verbinden“":"Client-ID fehlt")));
     if(!CLIENT_ID){const i=el("input");i.type="text";i.placeholder="Google Client-ID (…apps.googleusercontent.com)";i.value=LS.get("g_client","");const s=el("button","btn","Client-ID speichern");s.type="button";s.onclick=()=>{LS.set("g_client",i.value.trim());tc=null;box(bx);status()};bx.append(i,s)}
     const c=el("button","btn","Jetzt verbinden");c.type="button";c.onclick=()=>connect();bx.appendChild(c)}
   setInterval(()=>{if(ok()&&!document.hidden)refresh(false)},10*60e3);
   /* abgelaufen? beim nächsten Antippen still erneuern (Google erlaubt das nur nach einer Berührung) */
   let lastTry=0;addEventListener("pointerdown",()=>{if(PW&&cid()&&LS.get("g_ok",0)&&!ok()&&Date.now()-lastTry>60e3){lastTry=Date.now();connect()}},{capture:true,passive:true});
   document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ok()&&Date.now()-LS.get("g_last",0)>5*60e3)refresh(false)});
-  return{connect,refresh,status,box,ok}})();
+  return{connect,refresh,status,box,ok,api}})();
+
+/* ---------- Live-Daten: YouTube (über die Google-Anmeldung) + Bot-Arena (über GitHub, nur Lesen) ----------
+   Läuft in der App selbst: beim Entsperren, alle 10 min und beim Zurückkehren in die App.
+   Fällt etwas aus, bleibt der letzte Stand aus dem Datenpaket stehen. */
+const LIVE=(()=>{const CH="UCZBMUZzwB1OQs1qtirU_gwQ",AR="kiliankrogstad1/bot_arena";let busy=false,err={};
+  const isoDur=s=>{const m=/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(s||"")||[];return(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)};
+  const tag=t=>new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(t||new Date());
+  const uhr=ms=>ms?new Intl.DateTimeFormat("de-CH",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(ms)):"–";
+  const g=u=>GG.api("https://www.googleapis.com/youtube/v3/"+u);
+
+  async function yt(){if(typeof GG==="undefined"||!GG.ok())return;
+    const ch=((await g("channels?part=statistics,contentDetails&id="+CH)).items||[])[0];if(!ch)throw new Error("Kanal nicht gefunden");
+    const st=ch.statistics,up=ch.contentDetails.relatedPlaylists.uploads;
+    let ids=[],pt="";do{const p=await g("playlistItems?part=contentDetails&maxResults=50&playlistId="+up+(pt?"&pageToken="+pt:""));ids.push(...(p.items||[]).map(x=>x.contentDetails.videoId));pt=p.nextPageToken}while(pt&&ids.length<200);
+    const vs=[];for(let i=0;i<ids.length;i+=50){const v=await g("videos?part=snippet,statistics,contentDetails&id="+ids.slice(i,i+50).join(","));vs.push(...(v.items||[]))}
+    const now=Date.now(),prev=LS.get("yt_snap",{}),old={},snap={};((S.vids&&S.vids.videos)||[]).forEach(x=>old[x.id]=x);
+    const videos=vs.map(v=>{const views=+v.statistics.viewCount||0,o=old[v.id]||{};let p=prev[v.id];
+      if(!p||now-p.t>=20*60e3){const vph=p&&now>p.t?Math.max(0,Math.round((views-p.v)/((now-p.t)/36e5)*10)/10):(p?p.vph:null);p={v:views,t:now,vph}}snap[v.id]=p;
+      return{id:v.id,title:v.snippet.title,date:v.snippet.publishedAt.slice(0,10),dur:v.contentDetails.duration,views,likes:+v.statistics.likeCount||0,
+        comments:+v.statistics.commentCount||0,vph:p.vph!=null?p.vph:(o.vph!=null?o.vph:null),breakout:o.breakout!=null?o.breakout:null,type:isoDur(v.contentDetails.duration)<=180?"short":"long"}})
+      .sort((a,b)=>b.date.localeCompare(a.date));
+    LS.set("yt_snap",snap);S.vids={quelle:"YouTube live",stand:tag(),videos};
+    const subs=+st.subscriberCount||0,views=+st.viewCount||0,d=tag();
+    const ser=[];[...((S.yt&&S.yt.series)||[]),...LS.get("yt_series",[])].forEach(p=>{const i=ser.findIndex(q=>q.d===p.d);if(i<0)ser.push(Object.assign({},p));else if(p.views!=null)ser[i]=Object.assign({},ser[i],p)});
+    const k=ser.findIndex(q=>q.d===d);if(k>=0)ser.splice(k,1);ser.push({d,subs,views});ser.sort((a,b)=>a.d.localeCompare(b.d));
+    const keep=tag(new Date(now-400*864e5));LS.set("yt_series",ser.filter(p=>p.d>=keep));
+    const d30=tag(new Date(now-30*864e5)),base=[...ser].reverse().find(p=>p.d<=d30)||ser[0];
+    const y=Object.assign({goalSubs:1000},S.yt||{});y.subs=subs;y.views=views;y.videos=+st.videoCount||videos.length;y.videos30=videos.filter(v=>v.date>=d30).length;
+    if(base&&base.d!==d){y.subsGained30=subs-base.subs;if(base.views!=null)y.viewsGained30=views-base.views}
+    y.asOf=d.split("-").reverse().join(".")+" · live "+uhr(now);y.series=ser;S.yt=y;LS.set("yt_last",now)}
+
+  async function arena(){const t=PW?await openLocal("arena"):null;if(!t)return false;
+    const r=await fetch("https://api.github.com/repos/"+AR+"/contents/state/app.json?t="+Date.now(),{headers:{Authorization:"Bearer "+t,Accept:"application/vnd.github.raw+json"},cache:"no-store"});
+    if(r.status===401||r.status===403||r.status===404)throw new Error("Token ungültig oder ohne Leserecht auf bot_arena");if(!r.ok)throw new Error("GitHub "+r.status);
+    S.arena=await r.json();LS.set("ar_last",Date.now());return true}
+
+  async function refresh(){if(busy||!PW||!navigator.onLine)return;busy=true;err={};
+    try{await arena()}catch(e){err.arena=String(e.message||e).slice(0,80)}
+    try{await yt()}catch(e){const m=String((e&&e.message)||e);if(!(e&&e.code==="needs_reauth"))err.yt=/has not been used|disabled|accessNotConfigured/i.test(m)?"YouTube-API in Google Cloud noch nicht aktiviert":/insufficient|scope|permission/i.test(m)?"Google neu verbinden (YouTube-Recht fehlt)":m.slice(0,80)}
+    finally{busy=false}try{renderAll()}catch(e){}box(document.getElementById("liveBox"))}
+
+  async function box(bx){if(!bx)return;bx.textContent="";
+    bx.appendChild(el("div","ast","Live-Daten (alle 10 min, solange die App offen ist)"));
+    bx.appendChild(el("div","note","YouTube: "+(err.yt?"⚠ "+err.yt:LS.get("yt_last",0)?"live ✓ "+uhr(LS.get("yt_last",0)):"kommt über „Mit Google verbinden“")));
+    const has=PW&&LS.get("sec_arena",null);
+    bx.appendChild(el("div","note","Bot-Arena: "+(err.arena?"⚠ "+err.arena:has?(LS.get("ar_last",0)?"live ✓ "+uhr(LS.get("ar_last",0)):"verbunden"):"GitHub-Token fehlt")));
+    if(has){const x=el("button","btn","Arena-Token entfernen");x.type="button";x.onclick=()=>{LS.set("sec_arena",null);LS.set("ar_last",0);box(bx)};
+      const n=el("button","btn","Jetzt aktualisieren");n.type="button";n.onclick=()=>refresh();bx.append(n,x);return}
+    bx.appendChild(el("div","note","Token erstellen: GitHub → Settings → Developer settings → Fine-grained tokens → nur Repo bot_arena, Recht „Contents: Read-only“."));
+    const ti=el("input");ti.type="text";ti.className="pwmask";ti.autocomplete="off";ti.placeholder="github_pat_… (nur Lesen, bot_arena)";ti.style.cssText="display:block;width:100%;margin:6px 0";
+    const s=el("button","btn","Token speichern");s.type="button";s.onclick=async()=>{const v=ti.value.trim();if(!/^(github_pat_|ghp_)/.test(v)){ti.focus();return}
+      await sealLocal("arena",v);ti.value="";refresh()};bx.append(ti,s)}
+
+  setInterval(()=>{if(!document.hidden)refresh()},10*60e3);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-Math.max(LS.get("ar_last",0),LS.get("yt_last",0))>5*60e3)refresh()});
+  addEventListener("online",()=>refresh());
+  return{refresh,box,yt,arena}})();
 
 /* ---------- Klang: Alfreds Geräusche + ruhige Hintergrundmusik (alles live erzeugt, keine Dateien) ---------- */
 const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{},set:Object.assign({music:.35,sfx:.6},LS.get("audio",{}))};
@@ -1401,7 +1459,7 @@ const KAudio=(()=>{const A={ctx:null,sfx:null,mus:null,rev:null,on:false,last:{}
   addEventListener("hashchange",()=>fx.nav());
   return{fx,unlock,running,wants,music,command,ctl,setVol}})();
 
-const APP_VER="3.5";
+const APP_VER="3.6";
 (function(){const f=document.getElementById("lockForm");if(f){const v=el("div","appver","Krogstad App "+APP_VER);f.appendChild(v)}})();
 /* ---------- App-Start: immer beim Core beginnen ---------- */
 if(!window.__skipSplash&&location.hash&&location.hash!=="#home"){try{history.replaceState(null,"",location.pathname+"#home")}catch(e){location.hash="home"}if(typeof route==="function")route()}

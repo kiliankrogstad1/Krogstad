@@ -30,12 +30,12 @@ body = cut(body, '<div class="lock"', '<div class="wrap"',
 body = rep(body, '  </div>\n\n  <!-- HOME -->', '  </div>\n  <p class="note" id="stand" style="margin:0 0 8px">–</p>\n\n  <!-- HOME -->')
 i = body.index('<section class="panel" aria-labelledby="h13">'); j = body.index("</section>", i) + 10
 body = body[:i] + ('<section class="panel" aria-labelledby="h13">\n      <div class="ph"><h2 id="h13"><span>10</span> // Sicherheit, Klang & Alfred</h2><div class="meta">dieses Gerät</div></div>\n'
-                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n      <div class="act" style="border-left-color:var(--violet)" id="pwBox"></div>\n      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>\n'
+                   '      <div class="act" style="border-left-color:var(--cyan)" id="keyBox"></div>\n      <div class="act" style="border-left-color:var(--violet)" id="pwBox"></div>\n      <div class="act" style="border-left-color:var(--green)" id="gBox"></div>\n      <div class="act" style="border-left-color:var(--blue)" id="liveBox"></div>\n'
                    '      <p class="note">Sperre nach 5 min im Hintergrund oder 15 min ohne Bedienung. Falsches Passwort: 10 s · 30 s · 1 min · 5 min Wartezeit.</p>\n'
                    '      <div class="volbox" id="volSec"></div>\n      <p class="note" id="pendBox"></p>\n    </section>') + body[j:]
 body = rep(body, 'Alfred schreibt auf Wunsch einen Antwort-Entwurf. Gesendet wird nie automatisch, nur gespeichert als Entwurf in Gmail.',
-           'Stand vom letzten Abgleich (3× täglich). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.')
-body = rep(body, '<p class="note">Routine aus deiner Wochenvorlage', '<p class="note">App · Daten verschlüsselt, Abgleich 3× täglich · Routine aus deiner Wochenvorlage')
+           'Live über Google (alle 10 min). Alfred schreibt auf Wunsch einen Antwort-Entwurf zum Kopieren.')
+body = rep(body, '<p class="note">Routine aus deiner Wochenvorlage', '<p class="note">App · Daten verschlüsselt · Kalender, Mails, YouTube und Bot-Arena live · Routine aus deiner Wochenvorlage')
 body = (R / "src" / "pwa_ui.html").read_text(encoding="utf-8") + body
 body = rep(body, '<form id="jvForm">', '<div class="act" id="jvKey" hidden></div><form id="jvForm" autocomplete="off">')
 body = re.sub(r'<input id="jvIn"[^>]*>', '<textarea id="jvIn" rows="1" autocomplete="off" autocorrect="on" spellcheck="true" enterkeyhint="send" placeholder="Frage an Alfred …" aria-label="Frage an Alfred"></textarea>', body)
@@ -80,6 +80,7 @@ js = rep(js, 'Andere Änderungen (To-dos usw.) soll er Claude im Chat schreiben.
 js = rep(js, 'q=inp.value.trim();{const kr=',
          'q=inp.value.trim();if(/passw/i.test(q)&&/(änder|aender|wechsel|neu|setz|vergessen)/i.test(q)){inp.value="";log.appendChild(el("div","msg me",q));const a=el("div","msg ai","Selbstverständlich, Sir. Bitte hier eingeben – Ihre Passwörter sehe ich nicht.");a.appendChild(pwCard());log.appendChild(a);log.scrollTop=log.scrollHeight;return}{const kr=')
 js += "\n" + (R / "src" / "pwa_google.js").read_text(encoding="utf-8")
+js += "\n" + (R / "src" / "pwa_live.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_audio.js").read_text(encoding="utf-8")
 js += "\n" + (R / "src" / "pwa_ui.js").read_text(encoding="utf-8")
 js += '\nif("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});\n'
